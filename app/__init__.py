@@ -53,4 +53,8 @@ def create_app(config_class=Config):
     app.register_blueprint(papers_bp, url_prefix='/api/papers')
     app.register_blueprint(data_analysis_bp, url_prefix='/api/data-analysis')
 
+    # Ensure a fresh deployment has the model tables before handling requests.
+    with app.app_context():
+        db.create_all()
+
     return app

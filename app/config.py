@@ -8,11 +8,11 @@ def get_database_uri():
     """Use the local SQLite database by default and Render's URL in production."""
     app_env = os.environ.get('APP_ENV', 'development').strip().lower()
     local_database = 'sqlite:///' + os.path.join(basedir, 'instance', 'research_mind.db')
+    database_url = os.environ.get('DATABASE_URL', '').strip()
 
-    if app_env != 'production':
+    if app_env != 'production' and not database_url:
         return local_database
 
-    database_url = os.environ.get('DATABASE_URL', '').strip()
     if not database_url:
         raise RuntimeError('DATABASE_URL must be configured when APP_ENV=production.')
 
