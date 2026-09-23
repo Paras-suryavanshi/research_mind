@@ -16,9 +16,11 @@ def get_database_uri():
     if not database_url:
         raise RuntimeError('DATABASE_URL must be configured when APP_ENV=production.')
 
-    # Some hosting providers still expose the legacy PostgreSQL scheme.
+    # Normalize hosting-provider PostgreSQL schemes for Psycopg 3.
     if database_url.startswith('postgres://'):
         database_url = 'postgresql://' + database_url[len('postgres://'):]
+    if database_url.startswith('postgresql://'):
+        database_url = 'postgresql+psycopg://' + database_url[len('postgresql://'):]
     return database_url
 
 class Config:

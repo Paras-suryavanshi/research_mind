@@ -165,6 +165,7 @@ CORE_API_KEY=your-core-api-key
 - Local development always defaults to SQLite at `instance/research_mind.db`.
 - Production requires `APP_ENV=production` and a `DATABASE_URL` value. On Render, set `DATABASE_URL` to the Render PostgreSQL Internal Database URL. The application also uses a provided `DATABASE_URL` automatically if `APP_ENV` was not set by the deployment environment.
 - The configuration also accepts the legacy `postgres://` PostgreSQL scheme and normalizes it for SQLAlchemy.
+- Production PostgreSQL connections use the Psycopg 3 driver, which is compatible with Render's current Python runtime.
 - At least one `GROQ_API_KEY_*` value should be configured for AI functionality.
 - Multiple Groq keys can be supplied; the service rotates through configured keys and model fallbacks when requests fail.
 - `CORE_API_KEY` is optional because CORE requests are skipped without a key and the selector can fall back to Crossref.
