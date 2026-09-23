@@ -8,6 +8,9 @@
     .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; text-align: left; }
     .pricing-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 2.5rem; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); }
     .pricing-card.pro { border-color: var(--accent-burgundy); position: relative; box-shadow: var(--shadow-md); }
+    .upgrade-modal { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.45); }
+    .upgrade-modal[hidden] { display: none; }
+    .upgrade-modal-card { width: 100%; max-width: 440px; padding: 2rem; background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); text-align: center; }
 </style>
 {% endblock %}
 
@@ -29,8 +32,27 @@
             <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--accent-burgundy);">Pro Researcher</h3>
             <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Advanced AI tools, unlimited systematic reviews & full PDF chat.</p>
             <div style="font-size: 2rem; font-weight: 700; margin-bottom: 2rem;">$29 <span style="font-size: 0.875rem; font-weight: 400; color: var(--text-secondary);">/ month</span></div>
-            <button class="btn btn-primary" style="width: 100%; margin-top: auto;" onclick="alert('Redirecting to secure checkout...')">Upgrade to Pro</button>
+            <button id="upgrade-pro-button" class="btn btn-primary" style="width: 100%; margin-top: auto;">Upgrade to Pro</button>
         </div>
     </div>
 </div>
+<div id="upgrade-modal" class="upgrade-modal" hidden role="dialog" aria-modal="true" aria-labelledby="upgrade-modal-title">
+    <div class="upgrade-modal-card">
+        <h2 id="upgrade-modal-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Upgrade to Pro</h2>
+        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">Payment integration is not available yet. We're currently working on it. For now, please continue using our Free Plan.</p>
+        <button id="close-upgrade-modal" class="btn btn-outline">Continue with Free Plan</button>
+    </div>
+</div>
+<script>
+const upgradeModal = document.getElementById('upgrade-modal');
+document.getElementById('upgrade-pro-button').addEventListener('click', function () {
+    upgradeModal.removeAttribute('hidden');
+});
+document.getElementById('close-upgrade-modal').addEventListener('click', function () {
+    upgradeModal.setAttribute('hidden', '');
+});
+upgradeModal.addEventListener('click', function (event) {
+    if (event.target === upgradeModal) upgradeModal.setAttribute('hidden', '');
+});
+</script>
 {% endblock %}

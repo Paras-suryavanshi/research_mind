@@ -18,11 +18,11 @@
         <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Profile Information</h3>
         <div style="margin-bottom: 1rem;">
             <label class="form-label">Username</label>
-            <input type="text" class="form-control" value=" researcher_pro " readonly style="background: var(--surface-color);">
+            <input id="settings-username" type="text" class="form-control" value="{{ current_user.username }}" maxlength="20" required>
         </div>
         <div>
             <label class="form-label">Email Address</label>
-            <input type="email" class="form-control" value=" researcher@university.edu ">
+            <input id="settings-email" type="email" class="form-control" value="{{ current_user.email }}" maxlength="120" required>
         </div>
     </div>
     
@@ -34,7 +34,51 @@
     </div>
     
     <div style="display: flex; justify-content: flex-end;">
-        <button class="btn btn-primary" onclick="alert('Settings saved successfully!')">Save Changes</button>
+        <button id="save-settings" class="btn btn-primary">Save Changes</button>
+    </div>
+    <p id="settings-message" style="display:none; margin-top:1rem; text-align:right;"></p>
+    <div style="display:flex; justify-content:flex-start; margin-top:1.5rem;">
+        <button id="logout-button" class="btn btn-outline">Logout</button>
     </div>
 </div>
+<script>
+document.getElementById('save-settings').addEventListener('click', async function () {
+    const message = document.getElementById('settings-message');
+    const username = document.getElementById('settings-username').value.trim();
+    const email = document.getElementById('settings-email').value.trim();
+    this.disabled = true;
+    message.style.display = 'none';
+    try {
+        const response = await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, email})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to save changes.');
+        message.textContent = data.message;
+        message.style.color = '#16a34a';
+        message.style.display = 'block';
+    } catch (error) {
+        message.textContent = error.message;
+        message.style.color = '#dc2626';
+        message.style.display = 'block';
+    } finally {
+        this.disabled = false;
+    }
+});
+document.getElementById('logout-button').addEventListener('click', async function () {
+    this.disabled = true;
+    try {
+        const response = await fetch('/api/auth/logout', {method: 'POST'});
+        if (!response.ok) throw new Error('Logout failed.');
+        window.location.replace('/login');
+    } catch (error) {
+        this.disabled = false;
+        message.textContent = error.message;
+        message.style.color = '#dc2626';
+        message.style.display = 'block';
+    }
+});
+</script>
 {% endblock %}

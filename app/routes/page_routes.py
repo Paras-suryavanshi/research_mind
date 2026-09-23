@@ -15,6 +15,10 @@ def login_page():
         return redirect(url_for('pages.dashboard'))
     return render_template('auth/login.html')
 
+@page_bp.route('/forgot-password')
+def forgot_password():
+    return render_template('auth/forgot_password.html')
+
 @page_bp.route('/signup')
 def signup_page():
     if current_user.is_authenticated:

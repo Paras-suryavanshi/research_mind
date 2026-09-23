@@ -4,11 +4,29 @@ from dotenv import load_dotenv
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv(os.path.join(basedir, '.env'))
 
+def get_database_uri():
+    """Use the local SQLite database by default and Render's URL in production."""
+    app_env = os.environ.get('APP_ENV', 'development').strip().lower()
+    local_database = 'sqlite:///' + os.path.join(basedir, 'instance', 'research_mind.db')
+
+    if app_env != 'production':
+        return local_database
+
+    database_url = os.environ.get('DATABASE_URL', '').strip()
+    if not database_url:
+        raise RuntimeError('DATABASE_URL must be configured when APP_ENV=production.')
+
+    # Some hosting providers still expose the legacy PostgreSQL scheme.
+    if database_url.startswith('postgres://'):
+        database_url = 'postgresql://' + database_url[len('postgres://'):]
+    return database_url
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'default-dev-key')
     
     # Database Configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI', 'sqlite:///' + os.path.join(basedir, 'instance', 'research_mind.db'))
+    APP_ENV = os.environ.get('APP_ENV', 'development').strip().lower()
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Groq API Key Pool

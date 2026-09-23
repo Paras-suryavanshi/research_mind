@@ -146,7 +146,7 @@ Create a `.env` file in the project root. The file is intentionally ignored by G
 
 ```dotenv
 SECRET_KEY=replace-with-a-long-random-secret
-DATABASE_URI=sqlite:///instance/research_mind.db
+APP_ENV=development
 
 GROQ_API_KEY_1=your-groq-api-key
 # Optional additional keys used by the Groq key rotation pool:
@@ -162,7 +162,9 @@ CORE_API_KEY=your-core-api-key
 ### Configuration notes
 
 - `SECRET_KEY` signs Flask sessions. Use a strong value outside local development.
-- `DATABASE_URI` can point to another SQLAlchemy-supported database URI, although the default project configuration uses SQLite.
+- Local development always defaults to SQLite at `instance/research_mind.db`.
+- Production requires `APP_ENV=production` and a `DATABASE_URL` value. On Render, set `DATABASE_URL` to the Render PostgreSQL Internal Database URL.
+- The configuration also accepts the legacy `postgres://` PostgreSQL scheme and normalizes it for SQLAlchemy.
 - At least one `GROQ_API_KEY_*` value should be configured for AI functionality.
 - Multiple Groq keys can be supplied; the service rotates through configured keys and model fallbacks when requests fail.
 - `CORE_API_KEY` is optional because CORE requests are skipped without a key and the selector can fall back to Crossref.
