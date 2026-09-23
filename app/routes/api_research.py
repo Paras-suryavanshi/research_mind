@@ -26,6 +26,36 @@ def execute_research_query():
     if len(query) > 2000:
         return jsonify({"error": "Research query is too long"}), 400
 
+    if GroqService.requires_safety_refusal(query):
+        return jsonify({
+            "data": GroqService.SAFE_REFUSAL,
+            "papers": [],
+            "source": "safety",
+            "intent": "GENERAL_CHAT",
+            "search_query": None,
+        }), 200
+
+    # Classify every input before any provider search is attempted.
+    classification = GroqService.classify_research_input(query)
+    if classification["error"]:
+        return jsonify({"error": classification["error"]}), 500
+    intent = classification["content"]["intent"]
+    normalized_query = classification["content"]["search_query"]
+
+    if intent == "GENERAL_CHAT":
+        result = GroqService.generate_general_chat(query)
+        if result["error"]:
+            return jsonify({"error": result["error"]}), 500
+        return jsonify({
+            "data": result["content"],
+            "papers": [],
+            "source": "general_chat",
+            "intent": intent,
+            "search_query": None,
+        }), 200
+
+    search_query = normalized_query
+
     if project_id is not None:
         try:
             project_id = int(project_id)
@@ -37,7 +67,7 @@ def execute_research_query():
             return jsonify({"error": "Project not found"}), 404
 
     # Step 1: Execute intelligent search across sources
-    search_results = ResearchSelector.execute_search(query, max_results=5)
+    search_results = ResearchSelector.execute_search(search_query, max_results=5)
     source = search_results["source"]
     papers = search_results["papers"]
     
@@ -46,7 +76,9 @@ def execute_research_query():
         return jsonify({
             "data": "Sorry, we can't help with this topic as it is not available on any of the available research platforms.",
             "papers": [],
-            "source": source
+            "source": source,
+            "intent": intent,
+            "search_query": search_query,
         }), 200
 
     # Step 3: Format context for Groq
@@ -94,7 +126,20 @@ Structure your response with:
 Use Markdown tables for structured comparisons or lists with consistent fields.
 Use citations [1], [2], etc. and do not fabricate evidence."""
 
-    prompt = f"""User research question: {query}
+    if intent == "RESEARCH_QUESTION":
+        user_request = f"""The user's original research question is:
+{query}
+
+The normalized literature search query is:
+{search_query}"""
+    else:
+        user_request = f"""The user's research topic is:
+{query}
+
+The normalized literature search query is:
+{search_query}"""
+
+    prompt = f"""{user_request}
 
 Research context:
 {context_str}
@@ -131,7 +176,9 @@ Follow the selected response length exactly: {response_length}."""
     return jsonify({
         "data": result["content"],
         "papers": papers,
-        "source": source
+        "source": source,
+        "intent": intent,
+        "search_query": search_query,
     }), 200
 
 @research_bp.route('/chat', methods=['POST'])
