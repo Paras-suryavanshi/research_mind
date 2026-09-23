@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Search History | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .history-table { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-light); }
+    .history-table th, .history-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-light); font-size: 0.875rem; }
+    .history-table th { background: var(--surface-color); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 2rem;">Search & Chat History</h1>
+
+<div style="display:flex; gap:0.75rem; margin-bottom:1rem;">
+    <button class="btn btn-primary" id="search-history-tab">Searches</button>
+    <button class="btn btn-outline" id="chat-history-tab">Chats</button>
+</div>
+<table class="history-table" id="search-history-table">
+    <thead>
+        <tr>
+            <th>Query</th>
+            <th>Mode</th>
+            <th>Source</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="search-history-body"></tbody>
+</table>
+<table class="history-table" id="chat-history-table" style="display:none;">
+    <thead><tr><th>Conversation</th><th>Messages</th><th>Updated</th><th>Actions</th></tr></thead>
+    <tbody id="chat-history-body"></tbody>
+</table>
+<script>
+    const dateLabel = value => new Date(value).toLocaleString();
+    const escapeHtml = value => String(value || '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+    async function loadHistory() {
+        const [searchResponse, chatResponse] = await Promise.all([
+            fetch('/api/history/searches'), fetch('/api/history/chats')
+        ]);
+        const searches = (await searchResponse.json()).items || [];
+        const chats = (await chatResponse.json()).items || [];
+        document.getElementById('search-history-body').innerHTML = searches.length ? searches.map(item =>
+            `<tr><td>${escapeHtml(item.query)}</td><td>${escapeHtml(item.mode)}</td><td>${escapeHtml(item.source)}</td><td>${dateLabel(item.created_at)}</td><td><button class="btn btn-outline history-open" data-query="${encodeURIComponent(item.query)}">Open</button></td></tr>`
+        ).join('') : '<tr><td colspan="5">No searches yet.</td></tr>';
+        document.getElementById('chat-history-body').innerHTML = chats.length ? chats.map(item =>
+            `<tr><td>${escapeHtml(item.title)}</td><td>${item.messages.length}</td><td>${dateLabel(item.updated_at)}</td><td><a class="btn btn-outline" href="/paper-chat?conversation_id=${encodeURIComponent(item.id)}">Open</a></td></tr>`
+        ).join('') : '<tr><td colspan="4">No chats yet.</td></tr>';
+        document.querySelectorAll('.history-open').forEach(button => button.addEventListener('click', () => {
+            window.location.href = '/dashboard?query=' + button.dataset.query;
+        }));
+    }
+    document.getElementById('search-history-tab').addEventListener('click', () => {
+        document.getElementById('search-history-table').style.display = '';
+        document.getElementById('chat-history-table').style.display = 'none';
+    });
+    document.getElementById('chat-history-tab').addEventListener('click', () => {
+        document.getElementById('search-history-table').style.display = 'none';
+        document.getElementById('chat-history-table').style.display = '';
+    });
+    loadHistory();
+</script>
+{% endblock %}

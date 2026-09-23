@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Presentations | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .pres-container {
+        max-width: 900px; margin: 0 auto;
+    }
+    .pres-card {
+        background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+        padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);
+    }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); }
+    .form-control {
+        width: 100%; padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md);
+        font-size: 1rem; font-family: inherit;
+    }
+    .form-control:focus { outline: none; border-color: var(--accent-burgundy); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    
+    @media (max-width: 768px) {
+        .grid-2 { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pres-container">
+    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center;">Generate Academic Presentation</h1>
+    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 2rem;">Synthesize literature into a structured slide deck outline.</p>
+    
+    <div class="pres-card">
+        <div class="form-group">
+            <label class="form-label">What presentation would you like to create?</label>
+            <textarea id="presentation-topic" class="form-control" rows="3" placeholder="e.g., A 15-minute conference presentation on the latest advancements in mRNA vaccines for oncology..."></textarea>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Target Audience</label>
+                <select id="presentation-audience" class="form-control">
+                    <option>Academic / Expert</option>
+                    <option>Industry Professionals</option>
+                    <option>General Public / Laymen</option>
+                    <option>Students</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Slide Count (Approximate)</label>
+                <select id="presentation-slides" class="form-control">
+                    <option>5-10 slides (Short)</option>
+                    <option>10-20 slides (Standard)</option>
+                    <option>20+ slides (Comprehensive)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: var(--text-secondary);">
+                <input id="presentation-notes" type="checkbox" checked style="accent-color: var(--accent-burgundy);">
+                Include speaking notes generated from underlying research papers
+            </label>
+        </div>
+        
+        <div style="border-top: 1px solid var(--border-light); padding-top: 1.5rem; display: flex; justify-content: flex-end;">
+            <button id="create-presentation" class="btn btn-primary">Create Presentation</button>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('create-presentation').addEventListener('click', async function () {
+    const topic = document.getElementById('presentation-topic').value.trim();
+    if (!topic) return window.alert('Describe the presentation topic first.');
+    this.disabled = true; this.textContent = 'Creating…';
+    try {
+        const response = await fetch('/api/research/query', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({query: topic, mode:'presentation', audience:document.getElementById('presentation-audience').value,
+                slides:document.getElementById('presentation-slides').value, speaker_notes:document.getElementById('presentation-notes').checked})});
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Presentation failed');
+        const output = document.createElement('pre'); output.style.cssText='white-space:pre-wrap;margin-top:1rem;line-height:1.6';
+        output.textContent = data.data || ''; document.querySelector('.pres-card').appendChild(output);
+    } catch (error) { window.alert(error.message); } finally { this.disabled = false; this.textContent = 'Create Presentation'; }
+});
+</script>
+{% endblock %}

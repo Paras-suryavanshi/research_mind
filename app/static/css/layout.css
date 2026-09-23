@@ -1,0 +1,15 @@
+/* Layout primitives shared by authenticated and public pages. */
+.public-layout { min-height: 100vh; }
+.public-layout > .header { position: sticky; top: 0; z-index: 20; }
+.app-layout { min-height: 100vh; }
+.sidebar-header { white-space: nowrap; }
+.header-right { min-width: 0; }
+.main-content { min-width: 0; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.pres-container, .lit-container, .upgrade-container, .settings-container,
+.profile-card { max-width: 900px; margin: 0 auto; }
+@media (max-width: 768px) {
+    .header-right > span { display: none; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .main-content { overflow-x: hidden; }
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title>Research Mind</title>
+  <rect width="48" height="48" rx="12" fill="#800020"/>
+  <path d="M14 11h13.5a8.5 8.5 0 0 1 0 17H22l-8 9V11Zm8 6v5h5.5a2.5 2.5 0 0 0 0-5H22Z" fill="#fff"/>
+  <path d="M31 29.5 36 37" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</svg>

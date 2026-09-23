@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Your Library | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .library-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .library-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .library-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .search-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        width: 250px;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: var(--accent-burgundy);
+    }
+    
+    .library-tabs {
+        display: flex;
+        gap: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+        margin-bottom: 1.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    
+    .library-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.75rem 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+    }
+    
+    .tab-btn.active {
+        color: var(--accent-burgundy);
+        border-bottom-color: var(--accent-burgundy);
+    }
+    
+    .library-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .lib-card {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    
+    .lib-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    
+    .card-meta {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    
+    .card-authors {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        flex: 1;
+    }
+    
+    .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        border-top: 1px solid var(--border-light);
+        padding-top: 1rem;
+        margin-top: auto;
+    }
+    
+    .action-btn {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: var(--radius-md);
+        background: var(--surface-color);
+        color: var(--text-primary);
+        border: 1px solid var(--border-light);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+        background: rgba(128, 0, 32, 0.05);
+        color: var(--accent-burgundy);
+        border-color: var(--accent-burgundy);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="library-header">
+    <h1 class="library-title">Your Library</h1>
+    <div class="library-controls">
+        <input type="text" class="search-input" id="library-search" placeholder="Search papers, authors, topics...">
+        <select class="search-input" style="width: auto;">
+            <option>Sort by: Newest</option>
+            <option>Sort by: A-Z</option>
+            <option>Sort by: Oldest</option>
+        </select>
+        <button class="btn btn-outline" id="new-folder-btn" title="New Folder">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+        </button>
+        <button class="btn btn-primary" id="upload-document-btn" title="Upload Document">Upload</button>
+    </div>
+</div>
+
+<div class="library-tabs">
+    <button class="tab-btn active" data-tab="all">All Items</button>
+    <button class="tab-btn" data-tab="papers">Papers</button>
+    <button class="tab-btn" data-tab="documents">Documents</button>
+    <button class="tab-btn" data-tab="searches">Saved Searches</button>
+</div>
+
+<div class="library-grid" id="library-content">
+    <!-- Items are loaded from the authenticated library API. -->
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const grid = document.getElementById('library-content');
+        const search = document.getElementById('library-search');
+        let items = [];
+        let activeTab = 'all';
+        const escapeHtml = value => String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        function render() {
+            const query = search.value.trim().toLowerCase();
+            const filtered = items.filter(item => {
+                const type = item.type || 'papers';
+                const matchesTab = activeTab === 'all' || type === activeTab;
+                return matchesTab && [item.title, item.authors, item.source].join(' ').toLowerCase().includes(query);
+            });
+            grid.innerHTML = filtered.length ? filtered.map(item => `
+                <div class="lib-card" data-item-id="${item.id}">
+                    <div class="card-meta"><span style="color: var(--accent-burgundy); font-weight: 600;">${escapeHtml(item.source)}</span><span>${escapeHtml(item.publication_date || '')}</span></div>
+                    <div class="card-title">${escapeHtml(item.title)}</div>
+                    <div class="card-authors">${escapeHtml(item.authors)}</div>
+                    <div class="card-actions">
+                        <button class="action-btn" data-action="chat">Chat</button>
+                        <button class="action-btn" data-action="open">Open</button>
+                        <button class="action-btn" data-action="move">Move</button>
+                    </div>
+                </div>`).join('') : '<p style="color:var(--text-secondary);">No library items match this view.</p>';
+        }
+        grid.addEventListener('click', event => {
+            const button = event.target.closest('[data-action]');
+            if (!button) return;
+            const item = items.find(entry => String(entry.id) === button.closest('.lib-card').dataset.itemId);
+            if (button.dataset.action === 'chat') {
+                window.location.href = '/paper-chat?' + new URLSearchParams({
+                    title: item.title || '',
+                    abstract: item.abstract || '',
+                    pdf_url: item.pdf_url || item.url || ''
+                }).toString();
+            }
+            if (button.dataset.action === 'open' && item.url) window.open(item.url, '_blank', 'noopener');
+            if (button.dataset.action === 'move') {
+                const folder = window.prompt('Folder name', 'My papers');
+                if (folder) localStorage.setItem('library-folder-' + item.id, folder);
+            }
+        });
+        document.querySelectorAll('.tab-btn').forEach(tab => tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            tab.classList.add('active'); activeTab = tab.dataset.tab; render();
+        }));
+        search.addEventListener('input', render);
+        document.getElementById('new-folder-btn').addEventListener('click', () => {
+            const name = window.prompt('New folder name');
+            if (name) localStorage.setItem('library-folder-' + name, JSON.stringify([]));
+        });
+        document.getElementById('upload-document-btn').addEventListener('click', () => {
+            const input = document.createElement('input'); input.type = 'file';
+            input.accept = '.pdf,.txt,.doc,.docx,.csv,.xlsx,.xls';
+            input.onchange = async () => {
+                if (!input.files[0]) return;
+                const form = new FormData(); form.append('file', input.files[0]);
+                const response = await fetch('/api/library/documents', {method: 'POST', body: form});
+                const data = await response.json();
+                if (!response.ok) return window.alert(data.error || 'Upload failed');
+                window.location.reload();
+            };
+            input.click();
+        });
+        try {
+            const response = await fetch('/api/library/');
+            if (!response.ok) throw new Error('Library request failed');
+            const data = await response.json();
+            items = data.items || []; render();
+        } catch (error) {
+            grid.innerHTML = '<p style="color:var(--text-secondary);">Unable to load your library.</p>';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Profile | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .profile-card { max-width: 700px; margin: 0 auto; background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 2.5rem; text-align: center; }
+    .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: rgba(128, 0, 32, 0.1); color: var(--accent-burgundy); font-size: 2.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-card">
+    <div class="profile-avatar">RM</div>
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Research Mind User</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.875rem;">Academic Researcher • Joined August 2026</p>
+    
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+        <button class="btn btn-primary" onclick="window.location.href='/settings'">Edit Profile</button>
+        <button class="btn btn-outline" onclick="fetch('/api/auth/logout', {method: 'POST'}).then(() => window.location.href='/login')">Sign Out</button>
+    </div>
+</div>
+{% endblock %}

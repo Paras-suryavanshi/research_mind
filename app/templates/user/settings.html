@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Settings | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .settings-container { max-width: 800px; margin: 0 auto; background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 2rem; }
+    .settings-section { margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-light); }
+    .settings-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 2rem;">Account Settings</h1>
+    
+    <div class="settings-section">
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Profile Information</h3>
+        <div style="margin-bottom: 1rem;">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control" value=" researcher_pro " readonly style="background: var(--surface-color);">
+        </div>
+        <div>
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" value=" researcher@university.edu ">
+        </div>
+    </div>
+    
+    <div class="settings-section">
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Preferences</h3>
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+            <input type="checkbox" checked style="accent-color: var(--accent-burgundy);"> Enable automatic citation verification badge
+        </label>
+    </div>
+    
+    <div style="display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="alert('Settings saved successfully!')">Save Changes</button>
+    </div>
+</div>
+{% endblock %}

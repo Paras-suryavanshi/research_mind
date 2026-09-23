@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Research Gaps | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .workspace-header { text-align: center; margin-bottom: 2rem; }
+    .workspace-title { font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; }
+    
+    .research-modes {
+        display: flex; justify-content: center; gap: 1rem; overflow-x: auto;
+        padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .research-modes::-webkit-scrollbar { display: none; }
+    
+    .mode-tab {
+        padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem;
+        font-weight: 500; color: var(--text-secondary); background: white;
+        border: 1px solid var(--border-light); cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    }
+    .mode-tab:hover { background-color: var(--surface-color); }
+    .mode-tab.active {
+        background-color: rgba(128, 0, 32, 0.1); color: var(--accent-burgundy); border-color: var(--accent-burgundy);
+    }
+    
+    .search-container {
+        max-width: 800px; margin: 0 auto; background: white; border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); padding: 1.5rem;
+    }
+    
+    .search-textarea {
+        width: 100%; border: 1px solid var(--border-light); border-radius: var(--radius-md);
+        font-size: 1rem; min-height: 100px; padding: 1rem; color: var(--text-primary);
+        font-family: 'Inter', sans-serif; resize: vertical; margin-bottom: 1rem;
+    }
+    .search-textarea:focus { outline: none; border-color: var(--accent-burgundy); }
+    
+    .suggestions { margin-top: 1.5rem; }
+    .suggestions-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .suggestion-chip {
+        display: inline-block; padding: 0.5rem 1rem; background: var(--surface-color);
+        border: 1px solid var(--border-light); border-radius: 20px; font-size: 0.875rem;
+        color: var(--text-primary); margin-right: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s;
+    }
+    .suggestion-chip:hover { border-color: var(--accent-burgundy); color: var(--accent-burgundy); }
+    .gaps-result { margin-top: 1.5rem; line-height: 1.6; color: var(--text-primary); }
+    .gaps-result h2, .gaps-result h3 { color: var(--accent-burgundy); margin: 1.5rem 0 0.75rem; }
+    .gaps-result p { margin: 0 0 1rem; }
+    .gaps-result ul, .gaps-result ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .gaps-result blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 3px solid var(--accent-burgundy); color: var(--text-secondary); }
+    .gaps-table-scroll { overflow-x: auto; margin: 1rem 0; }
+    .gaps-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.9rem; }
+    .gaps-table th, .gaps-table td { border: 1px solid var(--border-light); padding: 0.75rem; text-align: left; vertical-align: top; }
+    .gaps-table th { background: var(--surface-color); color: var(--accent-burgundy); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+    <h1 class="workspace-title">Discover Research Gaps</h1>
+    <div class="research-modes">
+        <button class="mode-tab" onclick="window.location.href='/dashboard'">Quick Q/A</button>
+        <button class="mode-tab" onclick="window.location.href='/literature-review'">Literature Review</button>
+        <button class="mode-tab" onclick="window.location.href='/systematic-review'">Systematic Review</button>
+        <button class="mode-tab active">Research Gaps</button>
+        <button class="mode-tab" onclick="window.location.href='/find-papers'">Find Papers</button>
+    </div>
+</div>
+
+<div class="search-container">
+    <label style="display:block; font-weight: 600; margin-bottom: 0.5rem;">Target Domain or Topic</label>
+    <textarea id="gaps-input" class="search-textarea" placeholder="Enter a research topic to find gaps (e.g., Use of CRISPR in treating autoimmune diseases)"></textarea>
+    
+    <div style="display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" id="analyze-gaps">Analyze Literature Gaps</button>
+    </div>
+    
+    <div class="suggestions">
+        <div class="suggestions-title">Try these examples:</div>
+        <div class="suggestion-chip" onclick="document.getElementById('gaps-input').value=this.innerText">What are the research gaps in quantum computing error correction?</div>
+        <div class="suggestion-chip" onclick="document.getElementById('gaps-input').value=this.innerText">Identify gaps in literature related to gut microbiome and anxiety.</div>
+        <div class="suggestion-chip" onclick="document.getElementById('gaps-input').value=this.innerText">Underexplored areas in solid-state battery durability.</div>
+    </div>
+    <div id="gaps-result" class="gaps-result" style="display:none;"></div>
+</div>
+<script>
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[character]));
+}
+
+function renderGapsMarkdown(markdown) {
+    const lines = escapeHtml(markdown).split('\n');
+    const output = [];
+    let index = 0;
+    const parseRow = row => row.trim().replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+    const inline = value => value
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^\*])\*([^*]+)\*/g, '$1<em>$2</em>');
+
+    while (index < lines.length) {
+        const line = lines[index].trim();
+        if (!line) { index++; continue; }
+        if (line.startsWith('|') && index + 1 < lines.length &&
+            /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1])) {
+            const headers = parseRow(lines[index]);
+            const rows = [];
+            index += 2;
+            while (index < lines.length && lines[index].trim().startsWith('|')) {
+                rows.push(parseRow(lines[index]));
+                index++;
+            }
+            let table = '<div class="gaps-table-scroll"><table class="gaps-table"><thead><tr>';
+            headers.forEach(header => { table += `<th>${inline(header)}</th>`; });
+            table += '</tr></thead><tbody>';
+            rows.forEach(row => {
+                table += '<tr>';
+                headers.forEach((_, column) => { table += `<td>${inline(row[column] || '')}</td>`; });
+                table += '</tr>';
+            });
+            output.push(table + '</tbody></table></div>');
+            continue;
+        }
+        const heading = line.match(/^(#{2,3})\s+(.+)$/);
+        if (heading) {
+            output.push(`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`);
+            index++;
+            continue;
+        }
+        if (/^[-*]\s+/.test(line)) {
+            const items = [];
+            while (index < lines.length && /^[-*]\s+/.test(lines[index].trim())) {
+                items.push(`<li>${inline(lines[index].trim().replace(/^[-*]\s+/, ''))}</li>`);
+                index++;
+            }
+            output.push(`<ul>${items.join('')}</ul>`);
+            continue;
+        }
+        if (/^\d+\.\s+/.test(line)) {
+            const items = [];
+            while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
+                items.push(`<li>${inline(lines[index].trim().replace(/^\d+\.\s+/, ''))}</li>`);
+                index++;
+            }
+            output.push(`<ol>${items.join('')}</ol>`);
+            continue;
+        }
+        if (line.startsWith('> ')) {
+            output.push(`<blockquote>${inline(line.slice(2))}</blockquote>`);
+            index++;
+            continue;
+        }
+        const paragraph = [line];
+        index++;
+        while (index < lines.length && lines[index].trim() &&
+            !/^(#{2,3})\s|^[-*]\s+|^\d+\.\s+|^>\s|^\|/.test(lines[index].trim())) {
+            paragraph.push(lines[index].trim());
+            index++;
+        }
+        output.push(`<p>${inline(paragraph.join(' '))}</p>`);
+    }
+    return output.join('');
+}
+
+document.getElementById('analyze-gaps').addEventListener('click', async function () {
+    const query = document.getElementById('gaps-input').value.trim();
+    if (!query) return window.alert('Enter a topic first.');
+    this.disabled = true; this.textContent = 'Analyzing…';
+    try {
+        const response = await fetch('/api/research/query', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({query: query, mode: 'research_gaps'})});
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Analysis failed');
+        const result = document.getElementById('gaps-result');
+        result.innerHTML = renderGapsMarkdown(data.data || 'No gaps found.');
+        result.style.display = 'block';
+    } catch (error) { window.alert(error.message); } finally { this.disabled = false; this.textContent = 'Analyze Literature Gaps'; }
+});
+</script>
+{% endblock %}

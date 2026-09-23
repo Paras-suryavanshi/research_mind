@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Paraphraser | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .tool-header { text-align: center; margin-bottom: 2rem; }
+    .tool-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 1000px; margin: 0 auto; }
+    
+    .text-panel {
+        background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+        display: flex; flex-direction: column; overflow: hidden;
+    }
+    .panel-header {
+        padding: 1rem; border-bottom: 1px solid var(--border-light); font-weight: 600; font-size: 0.875rem;
+        background: var(--surface-color); display: flex; justify-content: space-between; align-items: center;
+    }
+    .text-area {
+        flex: 1; min-height: 300px; padding: 1rem; border: none; font-size: 1rem; line-height: 1.6;
+        color: var(--text-primary); resize: none; font-family: inherit;
+    }
+    .text-area:focus { outline: none; }
+    
+    .controls { max-width: 1000px; margin: 1.5rem auto 0; display: flex; justify-content: space-between; align-items: center; }
+    
+    @media (max-width: 768px) {
+        .tool-layout { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-header">
+    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Academic Paraphraser</h1>
+    <p style="color: var(--text-secondary);">Rewrite text for clarity, academic tone, or simplification.</p>
+</div>
+
+<div class="tool-layout">
+    <div class="text-panel">
+        <div class="panel-header">
+            <span>Original Text</span>
+            <span style="color: var(--text-secondary); font-weight: 400; font-size: 0.75rem;">Paste your draft here</span>
+        </div>
+        <textarea id="paraphrase-input" class="text-area" placeholder="Enter text to paraphrase..."></textarea>
+    </div>
+    
+    <div class="text-panel">
+        <div class="panel-header">
+            <span>Paraphrased Result</span>
+            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Copy</button>
+        </div>
+        <textarea id="paraphrase-output" class="text-area" readonly style="background: var(--surface-color);" placeholder="Result will appear here..."></textarea>
+    </div>
+</div>
+
+<div class="controls">
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <label style="font-size: 0.875rem; font-weight: 600;">Mode:</label>
+        <select id="paraphrase-mode" style="padding: 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: 0.875rem;">
+            <option>Academic (Formal)</option>
+            <option>Simplify (Layman)</option>
+            <option>Expand (More Detail)</option>
+            <option>Condense (Shorter)</option>
+        </select>
+    </div>
+    <button id="paraphrase-action" class="btn btn-primary" style="padding: 0.75rem 2rem;">Paraphrase</button>
+</div>
+<script>
+document.getElementById('paraphrase-action').addEventListener('click', async function () {
+    const input = document.getElementById('paraphrase-input'), output = document.getElementById('paraphrase-output');
+    if (!input.value.trim()) return window.alert('Enter text to paraphrase first.');
+    this.disabled = true; this.textContent = 'Working…';
+    try {
+        const response = await fetch('/api/ai_writer/tools', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({action:'paraphrase', text:input.value, mode:document.getElementById('paraphrase-mode').value})});
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Paraphrase failed');
+        output.value = data.data || '';
+    } catch (error) { window.alert(error.message); } finally { this.disabled = false; this.textContent = 'Paraphrase'; }
+});
+document.querySelector('.panel-header button').addEventListener('click', () => navigator.clipboard.writeText(document.getElementById('paraphrase-output').value));
+</script>
+{% endblock %}

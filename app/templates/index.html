@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Research Mind | Your Intelligent Research Companion{% endblock %}
+
+{% block styles %}
+<style>
+    .hero-section {
+        padding: 6rem 2rem;
+        text-align: center;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+    }
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+    }
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+    .hero-buttons .btn {
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+    }
+
+    .features-section, .verification-section {
+        padding: 5rem 2rem;
+        background-color: var(--surface-color);
+    }
+    .verification-section {
+        background-color: white;
+    }
+    .section-title {
+        text-align: center;
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin-bottom: 3rem;
+    }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .card {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--accent-burgundy);
+    }
+    .card-text {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .hero-title { font-size: 2.5rem; }
+        .hero-section { padding: 4rem 1rem; }
+        .hero-buttons { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+
+{% block public_content %}
+<section class="hero-section">
+    <h1 class="hero-title">Your Intelligent Research Companion</h1>
+    <p class="hero-subtitle">Accelerate your literature reviews, analyze massive datasets, and draft academic papers with AI models grounded entirely in verifiable scientific literature from PubMed, arXiv, CORE, and Crossref.</p>
+    <div class="hero-buttons">
+        <a href="/signup" class="btn btn-primary">Start For Free</a>
+        <a href="#features" class="btn btn-outline">Explore Features</a>
+    </div>
+</section>
+
+<section id="features" class="features-section">
+    <h2 class="section-title">Everything you need for academic research</h2>
+    <div class="grid">
+        <div class="card">
+            <h3 class="card-title">Quick Q/A & Chat</h3>
+            <p class="card-text">Ask complex scientific questions and receive answers cited inline using real research papers.</p>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Literature Reviews</h3>
+            <p class="card-text">Automatically compile and synthesize large volumes of research into structured, objective overviews.</p>
+        </div>
+        <div class="card">
+            <h3 class="card-title">AI Writer</h3>
+            <p class="card-text">A professional workspace to draft papers with integrated tools for paraphrasing, expanding, and citation generation.</p>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Research Gaps</h3>
+            <p class="card-text">Identify underexplored areas in current literature to formulate compelling novel research questions.</p>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Systematic Reviews</h3>
+            <p class="card-text">Manage your PRISMA workflow from initial screening to full-text extraction efficiently.</p>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Paper Chat</h3>
+            <p class="card-text">Upload a PDF or link an existing paper to converse directly with the text and extract methodologies instantly.</p>
+        </div>
+    </div>
+</section>
+
+<section class="verification-section">
+    <h2 class="section-title">Every Answer Is Built on Research</h2>
+    <div class="grid">
+        <div class="card" style="border-top: 4px solid var(--accent-burgundy);">
+            <h3 class="card-title">1. Smart Source Selection</h3>
+            <p class="card-text">Our intelligent routing system automatically queries the most relevant database—PubMed for health, arXiv for physics—ensuring you get the highest quality literature for your specific domain.</p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent-burgundy);">
+            <h3 class="card-title">2. Claim Verification</h3>
+            <p class="card-text">Every generated response is heavily constrained by our 120B parameter model. If a claim isn't in the provided papers, the system will explicitly state that evidence is unavailable rather than hallucinating.</p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent-burgundy);">
+            <h3 class="card-title">3. Transparent Evidence</h3>
+            <p class="card-text">View the exact PDF excerpts and metadata (DOI, Authors, Journal) supporting every generated sentence. Click on any inline citation to view the original text snippet directly in your browser.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

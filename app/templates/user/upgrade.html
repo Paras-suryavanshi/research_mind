@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Upgrade to Pro | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .upgrade-container { max-width: 1000px; margin: 0 auto; text-align: center; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; text-align: left; }
+    .pricing-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 2.5rem; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); }
+    .pricing-card.pro { border-color: var(--accent-burgundy); position: relative; box-shadow: var(--shadow-md); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upgrade-container">
+    <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">Unlock Your Full Research Potential</h1>
+    <p style="color: var(--text-secondary); font-size: 1.125rem;">Choose the right plan for your academic workflow and team size.</p>
+    
+    <div class="pricing-grid">
+        <div class="pricing-card">
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Free</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">For students and independent researchers.</p>
+            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 2rem;">$0 <span style="font-size: 0.875rem; font-weight: 400; color: var(--text-secondary);">/ month</span></div>
+            <button class="btn btn-outline" style="width: 100%; margin-top: auto;">Current Plan</button>
+        </div>
+        
+        <div class="pricing-card pro">
+            <div style="position: absolute; top: -12px; right: 24px; background: var(--accent-burgundy); color: white; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 12px;">POPULAR</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--accent-burgundy);">Pro Researcher</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Advanced AI tools, unlimited systematic reviews & full PDF chat.</p>
+            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 2rem;">$29 <span style="font-size: 0.875rem; font-weight: 400; color: var(--text-secondary);">/ month</span></div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: auto;" onclick="alert('Redirecting to secure checkout...')">Upgrade to Pro</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

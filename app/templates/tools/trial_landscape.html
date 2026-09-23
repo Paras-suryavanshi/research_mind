@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Trial Landscape | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .landscape-container { max-width: 1000px; margin: 0 auto; }
+    .landscape-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="landscape-container">
+    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center;">Clinical Trial Landscape Analysis</h1>
+    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 2rem;">Map active clinical trials, intervention phases, and comparative outcomes across medical registries.</p>
+    
+    <div class="landscape-card">
+        <label style="display:block; font-weight: 600; margin-bottom: 0.5rem;">Medical Intervention or Condition</label>
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+            <input id="trial-query" type="text" class="form-control" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md);" placeholder="e.g., Intermittent fasting for Type 2 Diabetes">
+            <button id="trial-analyze" class="btn btn-primary">Analyze Landscape</button>
+        </div>
+        
+        <div style="padding: 3rem; text-align: center; background: var(--surface-color); border-radius: var(--radius-md); border: 1px dashed var(--border-light);">
+            <p id="trial-result" style="color: var(--text-secondary);">Enter a medical condition or therapeutic intervention to generate the trial landscape map.</p>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('trial-analyze').addEventListener('click', async function () {
+    const query = document.getElementById('trial-query').value.trim(), result = document.getElementById('trial-result');
+    if (!query) return window.alert('Enter an intervention or condition first.');
+    this.disabled = true; this.textContent = 'Analyzing…';
+    try {
+        const response = await fetch('/api/research/query', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({query:query, mode:'trial_landscape'})});
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Analysis failed');
+        result.textContent = data.data || 'No trial landscape data found.';
+    } catch (error) { result.textContent = error.message; } finally { this.disabled = false; this.textContent = 'Analyze Landscape'; }
+});
+</script>
+{% endblock %}

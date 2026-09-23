@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}AI Writer | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .writer-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr 260px;
+        gap: 1.5rem;
+        height: calc(100vh - var(--header-height) - 4rem);
+    }
+    
+    .panel {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        font-weight: 600;
+        font-size: 0.875rem;
+        background: var(--surface-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .outline-list {
+        padding: 1rem;
+        overflow-y: auto;
+        list-style: none;
+    }
+    
+    .outline-item {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-radius: var(--radius-md);
+        margin-bottom: 0.25rem;
+    }
+    
+    .outline-item:hover, .outline-item.active {
+        background: rgba(128, 0, 32, 0.05);
+        color: var(--accent-burgundy);
+        font-weight: 500;
+    }
+    
+    .editor-toolbar {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        background: white;
+    }
+    
+    .editor-content {
+        flex: 1;
+        padding: 2rem 3rem;
+        overflow-y: auto;
+        font-size: 1rem;
+        line-height: 1.7;
+        color: var(--text-primary);
+        outline: none;
+    }
+    
+    .tools-list {
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .tool-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .tool-btn:hover {
+        background: var(--surface-color);
+        border-color: var(--accent-burgundy);
+        color: var(--accent-burgundy);
+    }
+    
+    @media (max-width: 1024px) {
+        .writer-layout {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        .outline-panel {
+            display: none; /* Hide outline on mobile by default */
+        }
+        .editor-content {
+            padding: 1rem;
+            min-height: 400px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="writer-layout">
+    
+    <!-- Left Column: Outline -->
+    <div class="panel outline-panel">
+        <div class="panel-header">Document Outline</div>
+        <ul class="outline-list">
+            <li class="outline-item active" data-section="Introduction" tabindex="0">Introduction</li>
+            <li class="outline-item" data-section="Literature Review" tabindex="0">Literature Review</li>
+            <li class="outline-item" data-section="Methodology" tabindex="0">Methodology</li>
+            <li class="outline-item" data-section="Results" tabindex="0">Results</li>
+            <li class="outline-item" data-section="Discussion" tabindex="0">Discussion</li>
+            <li class="outline-item" data-section="Conclusion" tabindex="0">Conclusion</li>
+            <li class="outline-item" data-section="References" tabindex="0">References</li>
+        </ul>
+    </div>
+    
+    <!-- Center Column: Editor -->
+    <div class="panel editor-panel">
+        <div class="editor-toolbar">
+            <button id="save-document" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Save</button>
+            <button id="export-document" class="btn btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Export</button>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); margin-left: auto;">Style: APA</span>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Words: <span id="word-count">0</span></span>
+        </div>
+        <div class="editor-content" id="main-editor" contenteditable="true" placeholder="Start drafting your research paper here...">
+            <h2>Introduction</h2>
+            <p>The rapid advancement of artificial intelligence models has necessitated robust evaluations of their underlying architectures...</p>
+        </div>
+    </div>
+    
+    <!-- Right Column: AI Tools -->
+    <div class="panel tools-panel">
+        <div class="panel-header">AI Writing Tools</div>
+        <div class="tools-list">
+            <button class="tool-btn" onclick="triggerAiTool('improve')">
+                <span>✨</span> Improve Writing
+            </button>
+            <button class="tool-btn" onclick="triggerAiTool('rewrite')">
+                <span>🔄</span> Rewrite
+            </button>
+            <button class="tool-btn" onclick="triggerAiTool('expand')">
+                <span>➕</span> Expand
+            </button>
+            <button class="tool-btn" onclick="triggerAiTool('shorten')">
+                <span>➖</span> Shorten
+            </button>
+            <button class="tool-btn" onclick="triggerAiTool('paraphrase')">
+                <span>📝</span> Paraphrase
+            </button>
+            <button class="tool-btn" onclick="triggerAiTool('cite')">
+                <span>📚</span> Add Citations
+            </button>
+            <button class="tool-btn" onclick="triggerAiTool('explain')">
+                <span>💡</span> Explain Context
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const editor = document.getElementById('main-editor');
+    const wordCount = document.getElementById('word-count');
+    const outlineItems = Array.from(document.querySelectorAll('.outline-item[data-section]'));
+    const sections = {};
+    let activeSection = 'Introduction';
+
+    outlineItems.forEach(item => {
+        sections[item.dataset.section] = item.dataset.section === 'Introduction'
+            ? '<h2>Introduction</h2><p>The rapid advancement of artificial intelligence models has necessitated robust evaluations of their underlying architectures...</p>'
+            : `<h2>${item.dataset.section}</h2><p></p>`;
+    });
+
+    function updateWordCount() {
+        const text = Object.values(sections).join(' ').replace(/<[^>]+>/g, ' ').trim();
+        wordCount.innerText = text === '' ? 0 : text.split(/\s+/).length;
+    }
+
+    function storeActiveSection() {
+        sections[activeSection] = editor.innerHTML;
+    }
+
+    function selectSection(sectionName) {
+        if (!sections[sectionName]) return;
+        storeActiveSection();
+        activeSection = sectionName;
+        editor.innerHTML = sections[activeSection];
+        outlineItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.section === activeSection);
+        });
+        editor.focus();
+        updateWordCount();
+    }
+
+    outlineItems.forEach(item => {
+        item.addEventListener('click', () => selectSection(item.dataset.section));
+        item.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                selectSection(item.dataset.section);
+            }
+        });
+    });
+    
+    editor.addEventListener('input', () => {
+        sections[activeSection] = editor.innerHTML;
+        updateWordCount();
+    });
+    
+    editor.innerHTML = sections[activeSection];
+    updateWordCount();
+
+    document.getElementById('save-document').addEventListener('click', async () => {
+        const title = window.prompt('Document title', 'Untitled Document');
+        if (title === null) return;
+        storeActiveSection();
+        const content = outlineItems.map(item =>
+            `<section data-section="${item.dataset.section}">${sections[item.dataset.section]}</section>`
+        ).join('');
+        try {
+            const response = await fetch('/api/ai_writer/documents', { method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title: title, content: content}) });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Save failed');
+            window.alert('Document saved.');
+        } catch (error) {
+            console.error('Error saving document:', error);
+            window.alert(error.message || 'Failed to save document.');
+        }
+    });
+
+    document.getElementById('export-document').addEventListener('click', () => {
+        storeActiveSection();
+        const exportText = outlineItems.map(item => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = sections[item.dataset.section];
+            return `${item.dataset.section}\n\n${wrapper.innerText.trim()}`;
+        }).join('\n\n----------------------------------------\n\n');
+        const blob = new Blob([exportText], {type: 'text/plain;charset=utf-8'});
+        const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+        link.download = 'research-document.txt'; link.click(); URL.revokeObjectURL(link.href);
+    });
+
+    async function triggerAiTool(toolType) {
+        // In a real app, this would send the selected text to the backend endpoint
+        const selectedText = window.getSelection().toString();
+        if (!selectedText) {
+            alert('Please highlight some text in the editor first to use this tool.');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/ai_writer/tools', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: toolType, text: selectedText })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'AI tool failed');
+            editor.focus();
+            document.execCommand('insertText', false, data.data || '');
+        } catch (error) {
+            console.error('Error triggering AI tool:', error);
+            alert('Failed to connect to the backend.');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Your Projects | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .projects-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+    .project-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.5rem; display: flex; flex-direction: column; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="projects-header">
+    <h1 style="font-size: 1.75rem; font-weight: 700;">Your Research Projects</h1>
+    <button class="btn btn-primary" onclick="alert('Create project modal triggered')">+ New Project</button>
+</div>
+
+<div class="projects-grid">
+    <div class="project-card">
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Default Workspace</h3>
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.5rem; flex: 1;">General repository for all active literature searches and unassigned notes.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 1rem; font-size: 0.75rem; color: var(--text-secondary);">
+            <span>12 Searches | 5 Papers</span>
+            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Open</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

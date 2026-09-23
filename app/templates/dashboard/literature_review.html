@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Literature Review | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .lit-container { max-width: 900px; margin: 0 auto; }
+    .lit-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); }
+    .form-control { width: 100%; padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: 1rem; font-family: inherit; }
+    .form-control:focus { outline: none; border-color: var(--accent-burgundy); }
+    .mode-tab { padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); background: white; border: 1px solid var(--border-light); cursor: pointer; white-space: nowrap; }
+    .mode-tab.active { background-color: rgba(128, 0, 32, 0.1); color: var(--accent-burgundy); border-color: var(--accent-burgundy); }
+    .literature-result { line-height: 1.6; color: var(--text-primary); }
+    .literature-result h2, .literature-result h3 { color: var(--accent-burgundy); margin: 1.5rem 0 0.75rem; }
+    .literature-result p { margin: 0 0 1rem; }
+    .literature-result ul, .literature-result ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .literature-result blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 3px solid var(--accent-burgundy); color: var(--text-secondary); }
+    .literature-table-scroll { overflow-x: auto; margin: 1rem 0; }
+    .literature-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.9rem; }
+    .literature-table th, .literature-table td { border: 1px solid var(--border-light); padding: 0.75rem; text-align: left; vertical-align: top; }
+    .literature-table th { background: var(--surface-color); color: var(--accent-burgundy); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="workspace-header" style="text-align:center; margin-bottom:2rem;">
+    <div class="research-modes" style="display:flex; justify-content:center; gap:1rem; overflow-x:auto; padding-bottom:0.5rem;">
+        <button class="mode-tab" onclick="window.location.href='/dashboard'">Quick Q/A</button>
+        <button class="mode-tab active">Literature Review</button>
+        <button class="mode-tab" onclick="window.location.href='/systematic-review'">Systematic Review</button>
+        <button class="mode-tab" onclick="window.location.href='/research-gaps'">Research Gaps</button>
+        <button class="mode-tab" onclick="window.location.href='/find-papers'">Find Papers</button>
+    </div>
+</div>
+<div class="lit-container">
+    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center;">Comprehensive Literature Review</h1>
+    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 2rem;">Synthesize massive volumes of literature into structured, objective academic overviews.</p>
+    
+    <div class="lit-card">
+        <div class="form-group">
+            <label class="form-label">Describe the topic or research question you want to explore</label>
+            <textarea id="literature-query" class="form-control" rows="4" placeholder="e.g., Clinical efficacy and safety profiles of novel mRNA vaccines in autoimmune disorders..."></textarea>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Primary Source Registry</label>
+                <select id="literature-source" class="form-control">
+                    <option>Auto-select (Recommended)</option>
+                    <option>PubMed Central</option>
+                    <option>arXiv</option>
+                    <option>Crossref</option>
+                    <option>CORE</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Scope / Depth</label>
+                <select id="literature-scope" class="form-control">
+                    <option>Standard (Top 10 papers)</option>
+                    <option>Comprehensive (Top 25 papers)</option>
+                    <option>Deep Synthesis</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="border-top: 1px solid var(--border-light); padding-top: 1.5rem; display: flex; justify-content: flex-end;">
+            <button id="start-literature-review" class="btn btn-primary">Start Literature Review</button>
+        </div>
+        <div id="literature-result" class="literature-result" style="display:none; margin-top:1.5rem;"></div>
+    </div>
+</div>
+<script>
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[character]));
+}
+
+function renderLiteratureMarkdown(markdown) {
+    const lines = escapeHtml(markdown).split('\n');
+    const output = [];
+    let index = 0;
+    const parseRow = row => row.trim().replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+    const inline = value => value
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^\*])\*([^*]+)\*/g, '$1<em>$2</em>');
+
+    while (index < lines.length) {
+        const line = lines[index].trim();
+        if (!line) {
+            index++;
+            continue;
+        }
+        if (line.startsWith('|') && index + 1 < lines.length &&
+            /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1])) {
+            const headers = parseRow(lines[index]);
+            const rows = [];
+            index += 2;
+            while (index < lines.length && lines[index].trim().startsWith('|')) {
+                rows.push(parseRow(lines[index]));
+                index++;
+            }
+            let table = '<div class="literature-table-scroll"><table class="literature-table"><thead><tr>';
+            headers.forEach(header => { table += `<th>${inline(header)}</th>`; });
+            table += '</tr></thead><tbody>';
+            rows.forEach(row => {
+                table += '<tr>';
+                headers.forEach((_, column) => { table += `<td>${inline(row[column] || '')}</td>`; });
+                table += '</tr>';
+            });
+            output.push(table + '</tbody></table></div>');
+            continue;
+        }
+        const heading = line.match(/^(#{2,3})\s+(.+)$/);
+        if (heading) {
+            output.push(`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`);
+            index++;
+            continue;
+        }
+        if (/^[-*]\s+/.test(line)) {
+            const items = [];
+            while (index < lines.length && /^[-*]\s+/.test(lines[index].trim())) {
+                items.push(`<li>${inline(lines[index].trim().replace(/^[-*]\s+/, ''))}</li>`);
+                index++;
+            }
+            output.push(`<ul>${items.join('')}</ul>`);
+            continue;
+        }
+        if (/^\d+\.\s+/.test(line)) {
+            const items = [];
+            while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
+                items.push(`<li>${inline(lines[index].trim().replace(/^\d+\.\s+/, ''))}</li>`);
+                index++;
+            }
+            output.push(`<ol>${items.join('')}</ol>`);
+            continue;
+        }
+        if (line.startsWith('> ')) {
+            output.push(`<blockquote>${inline(line.slice(2))}</blockquote>`);
+            index++;
+            continue;
+        }
+        const paragraph = [line];
+        index++;
+        while (index < lines.length && lines[index].trim() && !/^(#{2,3})\s|^[-*]\s+|^\d+\.\s+|^>\s|^\|/.test(lines[index].trim())) {
+            paragraph.push(lines[index].trim());
+            index++;
+        }
+        output.push(`<p>${inline(paragraph.join(' '))}</p>`);
+    }
+    return output.join('');
+}
+
+document.getElementById('start-literature-review').addEventListener('click', async function () {
+    const query = document.getElementById('literature-query').value.trim();
+    if (!query) return alert('Enter a topic or research question first.');
+    const result = document.getElementById('literature-result');
+    this.disabled = true;
+    this.textContent = 'Generating review...';
+    result.style.display = 'none';
+    try {
+        const response = await fetch('/api/research/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                query: query,
+                mode: 'literature_review',
+                source: document.getElementById('literature-source').value,
+                scope: document.getElementById('literature-scope').value
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Literature review failed.');
+        result.innerHTML = renderLiteratureMarkdown(data.data || 'No review was returned.');
+        result.style.display = 'block';
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        this.disabled = false;
+        this.textContent = 'Start Literature Review';
+    }
+});
+</script>
+{% endblock %}

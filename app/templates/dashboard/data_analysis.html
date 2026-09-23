@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Data Analysis | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .data-layout {
+        display: grid; grid-template-columns: 300px 1fr; gap: 2rem; max-width: 1200px; margin: 0 auto;
+    }
+    .upload-area {
+        border: 2px dashed var(--border-light); border-radius: var(--radius-lg); padding: 2rem;
+        text-align: center; background: var(--surface-color); cursor: pointer; transition: all 0.2s;
+    }
+    .upload-area:hover { border-color: var(--accent-burgundy); background: rgba(128, 0, 32, 0.02); }
+    
+    .panel { background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.5rem; }
+    
+    .chat-box { height: 400px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem; background: var(--surface-color); }
+    
+    @media (max-width: 900px) {
+        .data-layout { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 700;">Data Analysis</h1>
+    <p style="color: var(--text-secondary);">Upload your dataset or describe the analysis you need.</p>
+</div>
+
+<div class="data-layout">
+    <!-- Left: Data Source -->
+    <div class="panel">
+        <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Data Source</h2>
+        
+        <div class="upload-area" onclick="document.getElementById('file-upload').click()">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+            <div style="font-weight: 600; font-size: 0.875rem;">Click to upload CSV or Excel</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Max file size: 50MB</div>
+            <input type="file" id="file-upload" style="display: none;" accept=".csv, .xlsx, .xls">
+        </div>
+        
+        <div style="margin-top: 1.5rem;">
+            <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Active Dataset</h3>
+            <div style="padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center;">
+                <span id="dataset-name">None uploaded</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right: Analysis Interface -->
+    <div class="panel">
+        <div class="chat-box" id="analysis-chat">
+            <div style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">
+                Please upload a dataset to begin analysis.
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 0.75rem;">
+            <input id="analysis-query" type="text" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: 0.875rem;" placeholder="E.g., Generate a summary statistics table, check for outliers...">
+            <button id="run-analysis" class="btn btn-primary">Run</button>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('file-upload').addEventListener('change', function () {
+    document.getElementById('dataset-name').textContent = this.files[0] ? this.files[0].name : 'None uploaded';
+});
+document.getElementById('run-analysis').addEventListener('click', function () {
+    const file = document.getElementById('file-upload').files[0], query = document.getElementById('analysis-query').value;
+    if (!file) return window.alert('Upload a dataset first.');
+    const form = new FormData(); form.append('file', file); form.append('prompt', query);
+    this.disabled = true; this.textContent = 'Running…';
+    fetch('/api/data-analysis/', {method: 'POST', body: form}).then(async response => {
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Analysis failed');
+        document.getElementById('analysis-chat').innerHTML = '<pre style="white-space:pre-wrap;">' + JSON.stringify(data, null, 2) + '</pre>';
+    }).catch(error => window.alert(error.message)).finally(() => { this.disabled = false; this.textContent = 'Run'; });
+});
+</script>
+{% endblock %}

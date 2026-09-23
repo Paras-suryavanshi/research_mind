@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Find Papers | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .find-papers-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+    
+    .filters-sidebar {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        position: sticky;
+        top: 2rem;
+    }
+    
+    .filter-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .filter-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+    }
+    
+    .filter-label input[type="checkbox"] {
+        accent-color: var(--accent-burgundy);
+        width: 16px;
+        height: 16px;
+    }
+    
+    .filter-select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        background-color: white;
+    }
+    
+    .search-main {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .search-bar-wrapper {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .search-bar-wrapper input {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        font-size: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .search-bar-wrapper input:focus {
+        outline: none;
+        border-color: var(--accent-burgundy);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .search-stats {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .paper-card {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .paper-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .paper-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .meta-tag {
+        background: var(--surface-color);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+    
+    .meta-tag.source {
+        background: rgba(128, 0, 32, 0.1);
+        color: var(--accent-burgundy);
+    }
+    
+    .paper-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    
+    .paper-authors {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+    
+    .paper-abstract {
+        font-size: 0.875rem;
+        color: var(--text-primary);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .paper-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 900px) {
+        .find-papers-layout {
+            grid-template-columns: 1fr;
+        }
+        .filters-sidebar {
+            position: static;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="find-papers-layout">
+    
+    <!-- Left: Filters Sidebar -->
+    <aside class="filters-sidebar">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem;">Filters</h2>
+        
+        <div class="filter-group">
+            <div class="filter-title">Publication Date</div>
+            <select class="filter-select" id="date-filter">
+                <option value="any">Any time</option>
+                <option value="2026">Since 2026</option>
+                <option value="2025">Since 2025</option>
+                <option value="2022">Since 2022</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <div class="filter-title">Source Platforms</div>
+            <label class="filter-label"><input class="source-filter" type="checkbox" value="pubmed" checked> PubMed Central</label>
+            <label class="filter-label"><input class="source-filter" type="checkbox" value="arxiv" checked> arXiv</label>
+            <label class="filter-label"><input class="source-filter" type="checkbox" value="crossref" checked> Crossref</label>
+            <label class="filter-label"><input class="source-filter" type="checkbox" value="core" checked> CORE</label>
+        </div>
+        
+        <div class="filter-group">
+            <div class="filter-title">Access</div>
+            <label class="filter-label"><input id="open-access-filter" type="checkbox"> Open Access Only</label>
+            <label class="filter-label"><input id="pdf-filter" type="checkbox"> PDF Available Only</label>
+        </div>
+        
+        <div class="filter-group">
+            <div class="filter-title">Study Type</div>
+            <label class="filter-label"><input class="study-filter" type="checkbox" value="clinical-trial"> Clinical Trial</label>
+            <label class="filter-label"><input class="study-filter" type="checkbox" value="meta-analysis"> Meta-Analysis</label>
+            <label class="filter-label"><input class="study-filter" type="checkbox" value="review"> Review</label>
+        </div>
+        
+        <button class="btn btn-outline" id="apply-filters" style="width: 100%; margin-top: 1rem;">Apply Filters</button>
+    </aside>
+    
+    <!-- Right: Search & Results -->
+    <main class="search-main">
+        <div class="search-bar-wrapper">
+            <input type="text" placeholder="Search by keywords, authors, or DOI..." id="paper-search-input">
+            <button class="btn btn-primary" id="paper-search-button" style="padding: 0 2rem;">Search</button>
+        </div>
+        
+        <div class="recent-searches" id="recent-searches" style="display: none;">
+            <span style="font-size: 0.875rem; color: var(--text-secondary);">Recent searches:</span>
+        </div>
+        <div class="search-stats" id="search-stats">Enter a query to search available research platforms.</div>
+        <div id="paper-results"></div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const input = document.getElementById('paper-search-input');
+    const searchButton = document.getElementById('paper-search-button');
+    const applyButton = document.getElementById('apply-filters');
+    const results = document.getElementById('paper-results');
+    const stats = document.getElementById('search-stats');
+    const recent = document.getElementById('recent-searches');
+    let lastQuery = '';
+
+    const text = (value, fallback) => value === null || value === undefined || value === '' ? (fallback || '') : String(value);
+    const dateLabel = value => {
+        if (!value || value === 'Recent') return value || 'Date unavailable';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(undefined, {year: 'numeric', month: 'short'});
+    };
+
+    function addMeta(parent, value, source) {
+        if (!value) return;
+        const tag = document.createElement('span');
+        tag.className = 'meta-tag' + (source ? ' source' : '');
+        tag.textContent = value;
+        parent.appendChild(tag);
+    }
+
+    function renderPapers(papers) {
+        results.replaceChildren();
+        if (!papers.length) {
+            const empty = document.createElement('p');
+            empty.style.color = 'var(--text-secondary)';
+            empty.textContent = 'No papers matched these filters.';
+            results.appendChild(empty);
+            return;
+        }
+        papers.forEach(paper => {
+            const card = document.createElement('article');
+            card.className = 'paper-card';
+            const meta = document.createElement('div');
+            meta.className = 'paper-meta';
+            addMeta(meta, text(paper.source, 'Unknown source'), true);
+            addMeta(meta, dateLabel(paper.publication_date));
+            if (paper.doi) addMeta(meta, 'DOI: ' + paper.doi);
+            if (paper.pdf_url || paper.url) addMeta(meta, 'Open access');
+            card.appendChild(meta);
+
+            const title = document.createElement('h3');
+            title.className = 'paper-title';
+            title.textContent = text(paper.title, 'Untitled paper');
+            card.appendChild(title);
+            const authors = document.createElement('div');
+            authors.className = 'paper-authors';
+            authors.textContent = text(paper.authors, 'Authors unavailable');
+            card.appendChild(authors);
+            const abstract = document.createElement('p');
+            abstract.className = 'paper-abstract';
+            abstract.textContent = text(paper.abstract, 'No abstract available.');
+            card.appendChild(abstract);
+
+            const actions = document.createElement('div');
+            actions.className = 'paper-actions';
+            const chat = document.createElement('a');
+            chat.className = 'btn btn-primary';
+            chat.textContent = 'Chat with Paper';
+            chat.href = '/paper-chat?' + new URLSearchParams({
+                title: text(paper.title), abstract: text(paper.abstract),
+                pdf_url: text(paper.pdf_url || paper.url)
+            }).toString();
+            actions.appendChild(chat);
+
+            const save = document.createElement('button');
+            save.className = 'btn btn-outline';
+            save.textContent = 'Add to Library';
+            save.addEventListener('click', async () => {
+                save.disabled = true;
+                try {
+                    const response = await fetch('/api/library/', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(paper)
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Unable to save paper');
+                    save.textContent = 'Added to Library';
+                } catch (error) {
+                    save.disabled = false;
+                    window.alert(error.message);
+                }
+            });
+            actions.appendChild(save);
+            if (paper.pdf_url || paper.url) {
+                const pdf = document.createElement('a');
+                pdf.className = 'btn btn-outline';
+                pdf.textContent = 'View PDF';
+                pdf.href = paper.pdf_url || paper.url;
+                pdf.target = '_blank';
+                pdf.rel = 'noopener';
+                actions.appendChild(pdf);
+            }
+            card.appendChild(actions);
+            results.appendChild(card);
+        });
+    }
+
+    function filters() {
+        return {
+            date: document.getElementById('date-filter').value,
+            open_access: document.getElementById('open-access-filter').checked,
+            pdf_only: document.getElementById('pdf-filter').checked,
+            sources: Array.from(document.querySelectorAll('.source-filter:checked')).map(item => item.value),
+            study_types: Array.from(document.querySelectorAll('.study-filter:checked')).map(item => item.value)
+        };
+    }
+
+    async function search() {
+        const query = input.value.trim();
+        if (!query) { stats.textContent = 'Enter a query to search available research platforms.'; return; }
+        const payload = Object.assign({query: query}, filters());
+        searchButton.disabled = true;
+        stats.textContent = 'Searching available research platforms…';
+        try {
+            const response = await fetch('/api/papers/search', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Search failed');
+            lastQuery = query;
+            stats.textContent = data.count + ' paper' + (data.count === 1 ? '' : 's') + ' found for “' + query + '”.';
+            renderPapers(data.papers || []);
+        } catch (error) {
+            results.replaceChildren();
+            stats.textContent = error.message;
+        } finally {
+            searchButton.disabled = false;
+        }
+    }
+
+    async function loadRecent() {
+        try {
+            const response = await fetch('/api/history/searches');
+            if (!response.ok) return;
+            const data = await response.json();
+            const items = (data.items || []).filter(item => item.mode === 'find_papers' && item.query).slice(0, 5);
+            if (!items.length) return;
+            items.forEach(item => {
+                const button = document.createElement('button');
+                button.className = 'btn btn-outline';
+                button.style.marginLeft = '0.5rem';
+                button.style.padding = '0.25rem 0.5rem';
+                button.textContent = item.query;
+                button.addEventListener('click', () => { input.value = item.query; search(); });
+                recent.appendChild(button);
+            });
+            recent.style.display = 'block';
+        } catch (error) { /* Recent searches are optional. */ }
+    }
+
+    searchButton.addEventListener('click', search);
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') search(); });
+    applyButton.addEventListener('click', () => { if (lastQuery) search(); });
+    loadRecent();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with Paper | Research Mind{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+    .chat-layout {
+        display: flex;
+        height: calc(100vh - var(--header-height) - 4rem);
+        gap: 1.5rem;
+    }
+    
+    .panel {
+        flex: 1;
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        font-weight: 600;
+        background: var(--surface-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .pdf-viewer {
+        flex: 1;
+        background: #e5e7eb; /* Placeholder for actual PDF frame */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        position: relative;
+    }
+    
+    .pdf-viewer iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    .chat-history {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .chat-msg {
+        max-width: 85%;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+    
+    .msg-user {
+        background: var(--surface-color);
+        color: var(--text-primary);
+        align-self: flex-end;
+        border: 1px solid var(--border-light);
+    }
+    
+    .msg-ai {
+        background: rgba(128, 0, 32, 0.05);
+        color: var(--text-primary);
+        align-self: flex-start;
+        border: 1px solid rgba(128, 0, 32, 0.2);
+    }
+
+    .msg-ai .markdown-response {
+        line-height: 1.65;
+        overflow-wrap: anywhere;
+    }
+
+    .msg-ai .markdown-response > :first-child {
+        margin-top: 0;
+    }
+
+    .msg-ai .markdown-response > :last-child {
+        margin-bottom: 0;
+    }
+
+    .msg-ai .markdown-response h1,
+    .msg-ai .markdown-response h2,
+    .msg-ai .markdown-response h3,
+    .msg-ai .markdown-response h4 {
+        color: var(--accent-burgundy);
+        line-height: 1.3;
+        margin: 1.25rem 0 0.6rem;
+    }
+
+    .msg-ai .markdown-response p {
+        margin: 0 0 0.85rem;
+    }
+
+    .msg-ai .markdown-response ul,
+    .msg-ai .markdown-response ol {
+        margin: 0.5rem 0 1rem;
+        padding-left: 1.5rem;
+    }
+
+    .msg-ai .markdown-response li {
+        margin: 0.3rem 0;
+    }
+
+    .msg-ai .markdown-response blockquote {
+        border-left: 3px solid var(--accent-burgundy);
+        color: var(--text-secondary);
+        margin: 1rem 0;
+        padding-left: 1rem;
+    }
+
+    .msg-ai .markdown-response pre {
+        background: #1f2937;
+        border-radius: var(--radius-md);
+        color: #f9fafb;
+        margin: 1rem 0;
+        max-width: 100%;
+        overflow-x: auto;
+        padding: 0.9rem 1rem;
+        white-space: pre;
+    }
+
+    .msg-ai .markdown-response code {
+        background: rgba(17, 24, 39, 0.08);
+        border-radius: 4px;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.88em;
+        padding: 0.12rem 0.3rem;
+    }
+
+    .msg-ai .markdown-response pre code {
+        background: transparent;
+        padding: 0;
+    }
+
+    .msg-ai .markdown-response table {
+        border-collapse: collapse;
+        display: block;
+        margin: 1rem 0;
+        max-width: 100%;
+        overflow-x: auto;
+        width: max-content;
+    }
+
+    .msg-ai .markdown-response th,
+    .msg-ai .markdown-response td {
+        border: 1px solid var(--border-light);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .msg-ai .markdown-response th {
+        background: rgba(128, 0, 32, 0.08);
+        font-weight: 600;
+    }
+
+    .msg-ai .markdown-response .math-display {
+        margin: 1rem 0;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.35rem 0;
+        text-align: center;
+    }
+
+    .msg-ai .markdown-response .katex-display {
+        margin: 0;
+        min-width: max-content;
+    }
+
+    .msg-ai .markdown-response .katex {
+        font-size: 1.05em;
+    }
+    
+    .chat-input-area {
+        padding: 1rem;
+        border-top: 1px solid var(--border-light);
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .chat-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        resize: none;
+    }
+    
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--accent-burgundy);
+    }
+    
+    .mobile-tabs {
+        display: none;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-tab {
+        flex: 1;
+        padding: 0.75rem;
+        text-align: center;
+        background: white;
+        border: 1px solid var(--border-light);
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .mobile-tab.active {
+        background: rgba(128, 0, 32, 0.1);
+        color: var(--accent-burgundy);
+        border-bottom: 2px solid var(--accent-burgundy);
+    }
+    
+    @media (max-width: 768px) {
+        .chat-layout {
+            flex-direction: column;
+            height: auto;
+        }
+        .mobile-tabs {
+            display: flex;
+        }
+        /* Mobile logic handled mostly via JS class toggling */
+        .panel {
+            height: 60vh;
+        }
+        .pdf-panel { display: flex; }
+        .chat-panel { display: none; }
+        
+        .chat-layout.show-chat .pdf-panel { display: none; }
+        .chat-layout.show-chat .chat-panel { display: flex; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mobile-tabs">
+    <div class="mobile-tab active" id="tab-pdf" onclick="toggleMobileView('pdf')">Paper View</div>
+    <div class="mobile-tab" id="tab-chat" onclick="toggleMobileView('chat')">AI Chat</div>
+</div>
+
+<div class="chat-layout" id="chat-layout">
+    
+    <!-- Left: Paper / PDF Viewer -->
+    <div class="panel pdf-panel">
+        <div class="panel-header">
+            <span>Document Viewer</span>
+            <span id="paper-source" style="font-size: 0.75rem; color: var(--text-secondary);">Source: selected paper</span>
+        </div>
+        <div class="pdf-viewer">
+            <div id="pdf-content" style="width:100%;height:100%;min-height:420px;display:flex;align-items:center;justify-content:center;">
+                <p style="color: var(--text-secondary);">No PDF was provided for this paper.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right: AI Chat -->
+    <div class="panel chat-panel">
+        <div class="panel-header">
+            <span>Chat with this paper</span>
+            <button id="clear-chat" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Clear</button>
+        </div>
+        
+        <div class="chat-history" id="chat-history">
+        </div>
+        
+        <div class="chat-input-area">
+            <textarea id="paper-question" class="chat-input" rows="2" placeholder="Ask anything about this paper..."></textarea>
+            <button class="btn btn-primary" onclick="askPaperQuestion()">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatParams = new URLSearchParams(window.location.search);
+    let conversationId = chatParams.get('conversation_id');
+    const paperAbstract = chatParams.get('abstract') || '';
+    const paperPdfUrl = chatParams.get('pdf_url') || '';
+    const paperTitle = chatParams.get('title') || 'Selected paper';
+    document.getElementById('paper-source').textContent = 'Source: ' + paperTitle;
+
+    function renderMarkdownResponse(source) {
+        const value = String(source || '');
+        if (!window.marked || !window.DOMPurify || !window.katex) {
+            const fallback = document.createElement('div');
+            fallback.textContent = value;
+            return fallback.innerHTML.replace(/\n/g, '<br>');
+        }
+
+        const mathBlocks = [];
+        const token = (display, expression) => {
+            const index = mathBlocks.push({display, expression}) - 1;
+            return `@@MATH_TOKEN_${index}@@`;
+        };
+        let markdown = value
+            .replace(/\$\$([\s\S]+?)\$\$/g, (_, expression) => token(true, expression.trim()))
+            .replace(/\\\[([\s\S]+?)\\\]/g, (_, expression) => token(true, expression.trim()))
+            .replace(/\\\(([\s\S]+?)\\\)/g, (_, expression) => token(false, expression.trim()))
+            .replace(/\$([^$\n]+?)\$/g, (_, expression) => token(false, expression.trim()));
+
+        marked.setOptions({gfm: true, breaks: true});
+        let html = marked.parse(markdown);
+        html = DOMPurify.sanitize(html, {
+            USE_PROFILES: {html: true},
+            ADD_ATTR: ['target', 'rel']
+        });
+
+        mathBlocks.forEach((math, index) => {
+            const rendered = katex.renderToString(math.expression, {
+                displayMode: math.display,
+                throwOnError: false,
+                trust: false
+            });
+            const wrapper = math.display
+                ? `<div class="math-display">${rendered}</div>`
+                : rendered;
+            html = html.replace(`@@MATH_TOKEN_${index}@@`, wrapper);
+        });
+        return html;
+    }
+
+    function appendAssistantMessage(content) {
+        const message = document.createElement('div');
+        message.className = 'chat-msg msg-ai';
+        message.innerHTML = `<div class="markdown-response">${renderMarkdownResponse(content)}</div>`;
+        document.getElementById('chat-history').appendChild(message);
+        return message;
+    }
+
+    if (/^https?:\/\//i.test(paperPdfUrl)) {
+        const frame = document.createElement('iframe');
+        frame.src = paperPdfUrl;
+        frame.title = paperTitle;
+        frame.style.cssText = 'width:100%;height:100%;min-height:420px;border:0;';
+        frame.loading = 'lazy';
+        const viewer = document.getElementById('pdf-content');
+        viewer.replaceChildren(frame);
+    }
+    // Handle mobile view toggling
+    function toggleMobileView(view) {
+        const layout = document.getElementById('chat-layout');
+        const tabPdf = document.getElementById('tab-pdf');
+        const tabChat = document.getElementById('tab-chat');
+        
+        if (view === 'chat') {
+            layout.classList.add('show-chat');
+            tabChat.classList.add('active');
+            tabPdf.classList.remove('active');
+        } else {
+            layout.classList.remove('show-chat');
+            tabPdf.classList.add('active');
+            tabChat.classList.remove('active');
+        }
+    }
+
+    // Handle chatting with the backend API
+    async function askPaperQuestion() {
+        const input = document.getElementById('paper-question');
+        const question = input.value.trim();
+        if (!question) return;
+        
+        const history = document.getElementById('chat-history');
+        
+        // Add user message to UI
+        const userMsg = document.createElement('div');
+        userMsg.className = 'chat-msg msg-user';
+        userMsg.textContent = question;
+        history.appendChild(userMsg);
+        
+        input.value = '';
+        history.scrollTop = history.scrollHeight;
+        
+        // Add loading state
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'chat-msg msg-ai';
+        loadingMsg.innerHTML = '<span style="color: var(--text-secondary);">Analyzing paper...</span>';
+        history.appendChild(loadingMsg);
+        history.scrollTop = history.scrollHeight;
+        
+        try {
+            const response = await fetch('/api/research/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: question,
+                    title: paperTitle,
+                    pdf_url: paperPdfUrl,
+                    abstract: paperAbstract,
+                    ...(conversationId ? {conversation_id: conversationId} : {})
+                })
+            });
+            
+            const data = await response.json();
+            
+            // Remove loading
+            history.removeChild(loadingMsg);
+            
+            if (response.ok) {
+                conversationId = data.conversation_id || conversationId;
+                appendAssistantMessage(data.data || 'No response was returned.');
+            } else {
+                const error = document.createElement('div');
+                error.className = 'chat-msg msg-ai';
+                error.textContent = data.error || `Request failed (${response.status}).`;
+                history.appendChild(error);
+            }
+        } catch (error) {
+            if (loadingMsg.parentNode === history) history.removeChild(loadingMsg);
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'chat-msg msg-ai';
+            errorMsg.textContent = 'Unable to connect to the research server.';
+            history.appendChild(errorMsg);
+        }
+        
+        history.scrollTop = history.scrollHeight;
+    }
+
+    async function loadConversation() {
+        if (!conversationId) return;
+        const response = await fetch(`/api/history/chats/${encodeURIComponent(conversationId)}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const history = document.getElementById('chat-history');
+        history.innerHTML = '';
+        (data.messages || []).forEach(message => {
+            const element = document.createElement('div');
+            element.className = `chat-msg ${message.role === 'user' ? 'msg-user' : 'msg-ai'}`;
+            if (message.role === 'user') {
+                element.textContent = message.content;
+            } else {
+                element.innerHTML = `<div class="markdown-response">${renderMarkdownResponse(message.content)}</div>`;
+            }
+            history.appendChild(element);
+        });
+    }
+
+    document.getElementById('clear-chat').addEventListener('click', () => {
+        document.getElementById('chat-history').innerHTML = '';
+    });
+    loadConversation();
+</script>
+{% endblock %}

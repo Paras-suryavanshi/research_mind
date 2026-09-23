@@ -1,0 +1,23 @@
+/* Small reusable components used by page templates. */
+.pricing-grid, .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+.pricing-card, .project-card, .settings-section, .profile-card {
+    background: #fff;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+.pricing-card { display: flex; flex-direction: column; gap: .75rem; }
+.pricing-card.pro { border-color: var(--accent-burgundy); box-shadow: var(--shadow-md); }
+.settings-section { margin-bottom: 1rem; }
+.profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(128, 0, 32, .1); color: var(--accent-burgundy);
+    font-size: 1.4rem; font-weight: 700;
+}
+.suggestions-title { margin: 1.5rem 0 .75rem; font-size: .875rem; font-weight: 600; color: var(--text-secondary); }
+.suggestion-chip { display: inline-block; margin: .25rem; padding: .5rem .75rem; border: 1px solid var(--border-light); border-radius: 999px; cursor: pointer; font-size: .8rem; }
+.suggestion-chip:hover { border-color: var(--accent-burgundy); color: var(--accent-burgundy); background: rgba(128, 0, 32, .04); }
+@media (max-width: 480px) {
+    .pricing-grid, .projects-grid { grid-template-columns: 1fr; }
+}

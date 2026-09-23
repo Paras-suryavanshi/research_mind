@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Research Mind{% endblock %}
+
+{% block styles %}
+<style>
+    .workspace-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .workspace-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Horizontal scrollable modes for mobile support */
+    .research-modes {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    .research-modes::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+    
+    .mode-tab {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: white;
+        border: 1px solid var(--border-light);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .mode-tab.active {
+        background-color: rgba(128, 0, 32, 0.1);
+        color: var(--accent-burgundy);
+        border-color: var(--accent-burgundy);
+    }
+    
+    /* Research Input Area */
+    .search-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-light);
+        padding: 1rem;
+        transition: box-shadow 0.2s;
+    }
+    .search-container:focus-within {
+        box-shadow: var(--shadow-md);
+        border-color: #cbd5e1;
+    }
+    
+    .search-textarea {
+        width: 100%;
+        border: none;
+        resize: none;
+        font-size: 1rem;
+        min-height: 80px;
+        padding: 0.5rem;
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+    }
+    .search-textarea:focus {
+        outline: none;
+    }
+    
+    .search-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border-light);
+    }
+    
+    .toolbar-left, .toolbar-right {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .icon-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    .icon-btn:hover {
+        background: var(--surface-color);
+        color: var(--accent-burgundy);
+    }
+    .settings-wrap { position: relative; }
+    .response-settings {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 0.5rem);
+        z-index: 10;
+        width: 230px;
+        padding: 0.75rem;
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+    }
+    .response-settings[hidden] { display: none; }
+    .response-settings-title { margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+    .response-length-option { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem; font-size: 0.875rem; cursor: pointer; border-radius: var(--radius-sm); }
+    .response-length-option:hover { background: var(--surface-color); }
+    
+    .submit-btn {
+        background: var(--accent-burgundy);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .submit-btn:hover {
+        background: var(--accent-hover);
+    }
+    .submit-btn:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+    }
+    
+    /* Results Area */
+    #results-area {
+        max-width: 900px;
+        margin: 3rem auto;
+        display: none;
+    }
+    
+    .source-pill {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        background: rgba(128, 0, 32, 0.1);
+        color: var(--accent-burgundy);
+        border-radius: 12px;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .markdown-body {
+        line-height: 1.6;
+        color: var(--text-primary);
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-light);
+    }
+    .markdown-body h3 { margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--accent-burgundy); }
+    .markdown-body p { margin-bottom: 1rem; }
+    .markdown-body ul { margin-bottom: 1rem; padding-left: 1.5rem; }
+    .table-scroll { overflow-x: auto; margin: 1rem 0; }
+    .response-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.9rem; }
+    .response-table th, .response-table td { border: 1px solid var(--border-light); padding: 0.75rem; text-align: left; vertical-align: top; }
+    .response-table th { background: var(--surface-color); color: var(--accent-burgundy); font-weight: 600; }
+    
+    .citations-section {
+        margin-top: 2rem;
+    }
+    .citation-card {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .citation-title { font-weight: 600; font-size: 1rem; }
+    .citation-authors { font-size: 0.875rem; color: var(--text-secondary); }
+    
+    /* Evidence Verifier styling */
+    .evidence-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #16a34a;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #dcfce7;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .loader {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+    <h1 class="workspace-title">What are you researching?</h1>
+    <div class="research-modes">
+        <button class="mode-tab active" onclick="window.location.href='/dashboard'">Quick Q/A</button>
+        <button class="mode-tab" onclick="window.location.href='/literature-review'">Literature Review</button>
+        <button class="mode-tab" onclick="window.location.href='/systematic-review'">Systematic Review</button>
+        <button class="mode-tab" onclick="window.location.href='/research-gaps'">Research Gaps</button>
+        <button class="mode-tab" onclick="window.location.href='/find-papers'">Find Papers</button>
+    </div>
+</div>
+
+<div class="search-container">
+    <textarea id="search-input" class="search-textarea" placeholder="Ask any research question (e.g., What are the latest advancements in solid-state batteries?)" oninput="autoResize(this)"></textarea>
+    <div class="search-toolbar">
+        <div class="toolbar-left">
+            <div class="settings-wrap">
+            <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Response settings" aria-expanded="false">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+            <div id="response-settings" class="response-settings" hidden>
+                <p class="response-settings-title">Response length</p>
+                <label class="response-length-option"><input type="radio" name="response-length" value="low"> Low <span>Concise</span></label>
+                <label class="response-length-option"><input type="radio" name="response-length" value="medium" checked> Medium <span>Balanced</span></label>
+                <label class="response-length-option"><input type="radio" name="response-length" value="high"> High <span>Detailed</span></label>
+            </div>
+            </div>
+            <span style="font-size: 0.875rem; color: var(--text-secondary); margin-left: 0.5rem;">Mode: Normal</span>
+        </div>
+        <div class="toolbar-right">
+            <button id="submit-btn" class="submit-btn" onclick="submitQuery()">
+                Submit
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="loader" class="loader">
+    <svg style="animation: spin 1s linear infinite; margin: 0 auto; height: 2rem; width: 2rem; color: var(--accent-burgundy);" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    <p style="margin-top: 1rem; font-weight: 500;">Searching academic databases & analyzing literature...</p>
+</div>
+
+<div id="results-area">
+    <div id="source-indicator" class="source-pill"></div>
+    <div class="evidence-badge" style="margin-bottom: 1rem; display: inline-flex;">✓ Every claim verified against source texts</div>
+    
+    <div id="markdown-content" class="markdown-body"></div>
+    
+    <div class="citations-section">
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Sources & Evidence</h3>
+        <div id="citations-list"></div>
+    </div>
+</div>
+
+<script>
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+    }
+
+    document.getElementById('settings-btn').addEventListener('click', function () {
+        const panel = document.getElementById('response-settings');
+        const isHidden = panel.hasAttribute('hidden');
+        panel.toggleAttribute('hidden', !isHidden);
+        this.setAttribute('aria-expanded', String(isHidden));
+    });
+    
+    // Very basic markdown parser to keep frontend lightweight without external libraries
+    function parseMarkdown(text) {
+        const escaped = String(text || '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[character]));
+        const lines = escaped.split('\n');
+        const rendered = [];
+        let index = 0;
+        while (index < lines.length) {
+            if (lines[index].trim().startsWith('|') &&
+                index + 1 < lines.length &&
+                /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1])) {
+                const parseRow = row => row.trim().replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+                const headers = parseRow(lines[index]);
+                const body = [];
+                index += 2;
+                while (index < lines.length && lines[index].trim().startsWith('|')) {
+                    body.push(parseRow(lines[index]));
+                    index++;
+                }
+                let table = '<div class="table-scroll"><table class="response-table"><thead><tr>';
+                headers.forEach(header => { table += `<th>${header}</th>`; });
+                table += '</tr></thead><tbody>';
+                body.forEach(row => {
+                    table += '<tr>';
+                    headers.forEach((_, column) => { table += `<td>${row[column] || ''}</td>`; });
+                    table += '</tr>';
+                });
+                rendered.push(table + '</tbody></table></div>');
+                continue;
+            }
+            rendered.push(lines[index]);
+            index++;
+        }
+        let html = rendered.join('\n')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+            .replace(/\[([0-9]+)\]/gim, '<sup style="color: var(--accent-burgundy); font-weight: bold; cursor: pointer;">[$1]</sup>')
+            .replace(/\n/gim, '<br>');
+        return html;
+    }
+
+    async function submitQuery() {
+        const input = document.getElementById('search-input');
+        const query = input.value.trim();
+        if (!query) return;
+
+        const btn = document.getElementById('submit-btn');
+        const loader = document.getElementById('loader');
+        const resultsArea = document.getElementById('results-area');
+        
+        btn.disabled = true;
+        loader.style.display = 'block';
+        resultsArea.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/research/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: query,
+                    mode: 'quick_qa',
+                    response_length: document.querySelector('input[name="response-length"]:checked').value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                document.getElementById('source-indicator').textContent = 'Primary Source: ' + data.source.toUpperCase();
+                document.getElementById('markdown-content').innerHTML = parseMarkdown(data.data);
+                
+                // Render Citations
+                const citationsList = document.getElementById('citations-list');
+                citationsList.innerHTML = '';
+                
+                if (data.papers && data.papers.length > 0) {
+                    data.papers.forEach((paper, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'citation-card';
+                        const title = document.createElement('div');
+                        title.className = 'citation-title';
+                        title.textContent = `[${index + 1}] ${paper.title || 'Untitled paper'}`;
+                        const authors = document.createElement('div');
+                        authors.className = 'citation-authors';
+                        authors.textContent = `${paper.authors || 'Unknown authors'} | ${paper.publication_date || 'Date unavailable'}`;
+                        const links = document.createElement('div');
+                        links.style.cssText = 'display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.875rem;';
+                        [['url', 'View Source ↗'], ['pdf_url', 'View PDF ↗']].forEach(([key, label]) => {
+                            if (!paper[key] || !/^https?:\/\//i.test(paper[key])) return;
+                            const link = document.createElement('a');
+                            link.href = paper[key];
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            link.textContent = label;
+                            link.style.cssText = 'color: var(--accent-burgundy); font-weight: 500;';
+                            links.appendChild(link);
+                        });
+                        card.append(title, authors, links);
+                        citationsList.appendChild(card);
+                    });
+                } else {
+                    citationsList.innerHTML = '<p>No specific papers referenced.</p>';
+                }
+                
+                resultsArea.style.display = 'block';
+            } else {
+                alert(data.error || 'An error occurred during research.');
+            }
+        } catch (error) {
+            alert('Failed to connect to the research server.');
+        } finally {
+            btn.disabled = false;
+            loader.style.display = 'none';
+        }
+    }
+    const recentQuery = new URLSearchParams(window.location.search).get('query');
+    if (recentQuery) {
+        document.getElementById('search-input').value = recentQuery;
+        autoResize(document.getElementById('search-input'));
+    }
+</script>
+{% endblock %}
