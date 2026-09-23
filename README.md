@@ -51,7 +51,7 @@ The application combines provider-backed literature search with authenticated, d
 - SQLite by default
 - Requests for external provider requests
 - PyPDF2 for PDF text extraction
-- Beautiful Soup 4 for HTML/XML parsing
+- Python's standard XML library for provider response parsing
 - python-dotenv for environment configuration
 - Groq Python client for LLM generation
 

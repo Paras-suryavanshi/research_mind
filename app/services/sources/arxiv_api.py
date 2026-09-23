@@ -1,6 +1,6 @@
 import requests
-from bs4 import BeautifulSoup
 import urllib.parse
+import xml.etree.ElementTree as ET
 
 def query_arxiv(query, max_results=5):
     title_query = query.strip()
@@ -18,27 +18,31 @@ def query_arxiv(query, max_results=5):
     response = requests.get(url, timeout=10)
     response.raise_for_status()
     
-    soup = BeautifulSoup(response.content, 'xml')
-    entries = soup.find_all('entry')
+    root = ET.fromstring(response.content)
+    entries = root.findall('{http://www.w3.org/2005/Atom}entry')
     
     results = []
     for entry in entries:
-        title = entry.title.text.replace('\n', ' ').strip() if entry.title else "Unknown Title"
-        summary = entry.summary.text.replace('\n', ' ').strip() if entry.summary else ""
-        published = entry.published.text[:10] if entry.published else "Unknown Date"
-        url_link = entry.id.text if entry.id else ""
+        title_node = entry.find('{http://www.w3.org/2005/Atom}title')
+        summary_node = entry.find('{http://www.w3.org/2005/Atom}summary')
+        published_node = entry.find('{http://www.w3.org/2005/Atom}published')
+        id_node = entry.find('{http://www.w3.org/2005/Atom}id')
+        title = ' '.join((title_node.text or '').split()) if title_node is not None else "Unknown Title"
+        summary = ' '.join((summary_node.text or '').split()) if summary_node is not None else ""
+        published = (published_node.text or '')[:10] if published_node is not None else "Unknown Date"
+        url_link = id_node.text.strip() if id_node is not None and id_node.text else ""
         
         authors = []
-        for author in entry.find_all('author'):
-            name = author.find('name')
+        for author in entry.findall('{http://www.w3.org/2005/Atom}author'):
+            name = author.find('{http://www.w3.org/2005/Atom}name')
             if name is not None and name.text:
                 authors.append(name.text.strip())
             
         # Find PDF link
         pdf_url = ""
-        for link in entry.find_all('link'):
+        for link in entry.findall('{http://www.w3.org/2005/Atom}link'):
             if link.get('title') == 'pdf':
-                pdf_url = link.get('href')
+                pdf_url = link.get('href', '')
                 
         results.append({
             "title": title,
