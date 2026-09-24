@@ -42,6 +42,24 @@ def execute_research_query():
     intent = classification["content"]["intent"]
     normalized_query = classification["content"]["search_query"]
 
+    if intent == "UNCLASSIFIED":
+        result = GroqService.generate_unclassified_response(query)
+        if result["error"]:
+            return jsonify({
+                "data": "I couldn't determine exactly what you need. Could you clarify your request?",
+                "papers": [],
+                "source": "unclassified",
+                "intent": intent,
+                "search_query": None,
+            }), 200
+        return jsonify({
+            "data": result["content"],
+            "papers": [],
+            "source": "unclassified",
+            "intent": intent,
+            "search_query": None,
+        }), 200
+
     if intent == "GENERAL_CHAT":
         result = GroqService.generate_general_chat(query)
         if result["error"]:

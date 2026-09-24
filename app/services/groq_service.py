@@ -101,10 +101,42 @@ Preserve the user's actual intent and never invent a different topic.
 For GENERAL_CHAT, search_query must be null."""
         prompt = f"Classify this user input:\n{user_input}"
         result = cls._generate(prompt, system_prompt, max_tokens=180)
-        if result["error"]:
-            return result
+        parsed = cls._parse_classification(result.get("content"))
+        if parsed is not None:
+            return {"content": parsed, "error": None}
+
+        current_app.logger.warning(
+            "Initial research intent classification failed; retrying with strict JSON prompt."
+        )
+        retry_prompt = f"""Return only one valid JSON object and no other text.
+Do not use Markdown fences, explanations, or commentary.
+Allowed intents are exactly RESEARCH_TOPIC, RESEARCH_QUESTION, GENERAL_CHAT.
+Use a concise academic search_query for the first two intents and null for GENERAL_CHAT.
+
+User input:
+{user_input}"""
+        retry_system_prompt = (
+            "You are a strict JSON classifier. Output one syntactically valid JSON object only."
+        )
+        retry_result = cls._generate(retry_prompt, retry_system_prompt, max_tokens=120)
+        parsed = cls._parse_classification(retry_result.get("content"))
+        if parsed is not None:
+            return {"content": parsed, "error": None}
+
+        current_app.logger.warning(
+            "Research intent classification failed after retry; using UNCLASSIFIED fallback."
+        )
+        return {
+            "content": {"intent": "UNCLASSIFIED", "search_query": None},
+            "error": None,
+        }
+
+    @classmethod
+    def _parse_classification(cls, content):
         try:
-            content = result["content"].strip()
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("Empty classifier response")
+            content = content.strip()
             if "{" in content and "}" in content:
                 content = content[content.find("{"):content.rfind("}") + 1]
             parsed = json.loads(content)
@@ -118,10 +150,10 @@ For GENERAL_CHAT, search_query must be null."""
                 raise ValueError("Research intent has no normalized query")
             else:
                 query = query.strip()[:2000]
-            return {"content": {"intent": intent, "search_query": query}, "error": None}
+            return {"intent": intent, "search_query": query}
         except (ValueError, TypeError, json.JSONDecodeError) as error:
             current_app.logger.warning("Invalid research intent response: %s", error)
-            return {"content": None, "error": "Unable to classify the research request."}
+            return None
 
     @classmethod
     def generate_general_chat(cls, user_input):
@@ -132,6 +164,19 @@ Answer ordinary conversation naturally in a few sentences. Do not discuss resear
 Do not provide explicit sexual instructions or other harmful/inappropriate content.
 For an explicit sexual-instruction request, reply exactly:
 I’m sorry, but I can’t assist with that request. I can help with a safe and appropriate alternative if you’d like.""",
+            max_tokens=250,
+        )
+
+    @classmethod
+    def generate_unclassified_response(cls, user_input):
+        return cls._generate(
+            prompt=user_input,
+            system_prompt="""You are a concise, safe, and helpful assistant.
+The user's message could not be confidently classified. Respond based only on the input itself.
+If it appears research-related, briefly explain or clarify what the user may be asking without searching papers.
+If it is ordinary conversation, respond naturally.
+Ask one short clarifying question when the intent is unclear.
+Keep the response concise. Do not invent facts, provide harmful instructions, or discuss unrelated topics.""",
             max_tokens=250,
         )
 
