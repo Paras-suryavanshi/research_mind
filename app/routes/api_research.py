@@ -35,6 +35,15 @@ def execute_research_query():
             "search_query": None,
         }), 200
 
+    if GroqService.is_identity_question(query):
+        return jsonify({
+            "data": GroqService.IDENTITY_RESPONSE,
+            "papers": [],
+            "source": "general_chat",
+            "intent": "GENERAL_CHAT",
+            "search_query": None,
+        }), 200
+
     # Classify every input before any provider search is attempted.
     classification = GroqService.classify_research_input(query)
     if classification["error"]:
@@ -250,7 +259,12 @@ def chat_with_paper():
         if extracted:
             context_text = extracted
             
-    system_prompt = "You are a helpful research assistant. Answer the user's question based strictly on the provided paper text. Do not invent information."
+    system_prompt = """You are Research Mind AI, a helpful research assistant.
+If asked about your identity, name, or purpose, say your name is Research Mind AI and explain that
+you help users find scholarly papers, synthesize evidence, answer research questions, identify
+research gaps, and support literature reviews and paper-based research workflows. Never identify
+yourself as ChatGPT or another AI product.
+Otherwise, answer the user's question based strictly on the provided paper text. Do not invent information."""
     prompt = (
         f"Paper Title: {title or 'Unknown'}\n"
         f"Paper Content:\n{context_text or 'No paper text was provided.'}\n\n"
@@ -258,7 +272,10 @@ def chat_with_paper():
         f"User Question: {question}"
     )
     
-    result = GroqService.generate_research_content(prompt=prompt, system_prompt=system_prompt)
+    if GroqService.is_identity_question(question):
+        result = {"content": GroqService.IDENTITY_RESPONSE, "error": None}
+    else:
+        result = GroqService.generate_research_content(prompt=prompt, system_prompt=system_prompt)
     
     if result["error"]:
         return jsonify({"error": result["error"]}), 500

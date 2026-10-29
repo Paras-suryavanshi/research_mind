@@ -5,6 +5,12 @@ from flask import current_app
 
 class GroqService:
     SAFE_REFUSAL = "I’m sorry, but I can’t assist with that request. I can help with a safe and appropriate alternative if you’d like."
+    IDENTITY_RESPONSE = (
+        "My name is Research Mind AI. I’m an AI-powered academic research assistant "
+        "that helps you find scholarly papers, synthesize evidence, answer research "
+        "questions, identify research gaps, and support literature reviews and "
+        "paper-based research workflows."
+    )
     _current_key_index = 0
     _models = [
         "openai/gpt-oss-120b", 
@@ -19,6 +25,20 @@ class GroqService:
         key = keys[cls._current_key_index]
         cls._current_key_index = (cls._current_key_index + 1) % len(keys)
         return key
+
+    @classmethod
+    def is_identity_question(cls, user_input):
+        normalized = re.sub(r"[^\w\s]", " ", user_input.lower())
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        normalized = re.sub(r"^(?:hi|hello|hey)\s+", "", normalized)
+        return normalized in {
+            "who are you",
+            "what are you",
+            "what is your name",
+            "what do you do",
+            "tell me about yourself",
+            "can you tell me who you are",
+        }
 
     @classmethod
     def generate_research_content(
@@ -157,22 +177,34 @@ User input:
 
     @classmethod
     def generate_general_chat(cls, user_input):
+        if cls.is_identity_question(user_input):
+            return {"content": cls.IDENTITY_RESPONSE, "error": None}
         return cls._generate(
             prompt=user_input,
-            system_prompt="""You are a concise, friendly general assistant.
+            system_prompt=f"""You are Research Mind AI, a concise, friendly research assistant.
+If asked about your identity, name, or purpose, say your name is Research Mind AI and explain that
+you help users find scholarly papers, synthesize evidence, answer research questions, identify
+research gaps, and support literature reviews and paper-based research workflows. Never identify
+yourself as ChatGPT or another AI product.
 Answer ordinary conversation naturally in a few sentences. Do not discuss research papers unless asked.
 Do not provide explicit sexual instructions or other harmful/inappropriate content.
 For an explicit sexual-instruction request, reply exactly:
-I’m sorry, but I can’t assist with that request. I can help with a safe and appropriate alternative if you’d like.""",
+{cls.SAFE_REFUSAL}""",
             max_tokens=250,
         )
 
     @classmethod
     def generate_unclassified_response(cls, user_input):
+        if cls.is_identity_question(user_input):
+            return {"content": cls.IDENTITY_RESPONSE, "error": None}
         return cls._generate(
             prompt=user_input,
-            system_prompt="""You are a concise, safe, and helpful assistant.
+            system_prompt=f"""You are Research Mind AI, a concise, safe, and helpful assistant.
 The user's message could not be confidently classified. Respond based only on the input itself.
+If asked about your identity, name, or purpose, say your name is Research Mind AI and explain that
+you help users find scholarly papers, synthesize evidence, answer research questions, identify
+research gaps, and support literature reviews and paper-based research workflows. Never identify
+yourself as ChatGPT or another AI product.
 If it appears research-related, briefly explain or clarify what the user may be asking without searching papers.
 If it is ordinary conversation, respond naturally.
 Ask one short clarifying question when the intent is unclear.
